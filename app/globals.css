@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@layer utilities {
+  .animate-float-slow {
+    animation: float-orb 25s ease-in-out infinite;
+  }
+  .animate-float-medium {
+    animation: float-orb-reverse 18s ease-in-out infinite;
+  }
+  .animate-float-fast {
+    animation: float-orb 12s ease-in-out infinite;
+  }
+  .glass-sphere {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.1));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 
+      inset 4px 4px 12px rgba(255, 255, 255, 0.6),
+      inset -4px -4px 12px rgba(0, 0, 0, 0.05),
+      0 10px 30px rgba(0, 0, 0, 0.05);
+  }
+  .dark .glass-sphere {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 
+      inset 4px 4px 12px rgba(255, 255, 255, 0.1),
+      inset -4px -4px 12px rgba(0, 0, 0, 0.3),
+      0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+}
+
+@keyframes float-orb {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(50px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-30px, 40px) scale(0.9);
+  }
+}
+
+@keyframes float-orb-reverse {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-40px, 60px) scale(1.05);
+  }
+  66% {
+    transform: translate(50px, -30px) scale(0.95);
+  }
+}

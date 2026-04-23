@@ -1,0 +1,6 @@
+{
+  "name": "Grow.UZ",
+  "description": "A modern online academy and marketplace for teaching soft skills with a gamified experience.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": []
+}
