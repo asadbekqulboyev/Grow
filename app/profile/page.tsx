@@ -5,6 +5,7 @@ import { useTheme } from 'next-themes';
 import { Settings, Globe, Bell, Lock, LogOut, Award, CheckCircle, ChevronRight, Moon, Sun, Monitor, Camera, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -130,7 +131,9 @@ export default function ProfilePage() {
              <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-[#A8E6CF] to-[#2D5A27] border-4 border-white dark:border-gray-900 shadow-md relative mb-5 transition-colors group">
                 <div className="w-full h-full overflow-hidden rounded-full">
                   {user?.user_metadata?.avatar_url ? (
-                    <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                    <div className="w-full h-full relative">
+                      <Image src={user.user_metadata.avatar_url} alt="Profile" fill className="object-cover" referrerPolicy="no-referrer" />
+                    </div>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white text-3xl font-bold uppercase">{user?.email?.[0] || 'U'}</div>
                   )}

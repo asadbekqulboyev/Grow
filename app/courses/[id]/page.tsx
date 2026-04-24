@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, Clock, PlayCircle, Coins, Lock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Course {
   id: string;
@@ -110,10 +111,11 @@ export default function CourseDetailsPage() {
       {/* Dynamic Header Banner */}
       <div className="relative w-full h-[350px] md:h-[400px] overflow-hidden bg-gray-900 group">
         {course.image_url ? (
-          <img 
+          <Image 
             src={course.image_url} 
             alt={course.title} 
-            className="object-cover w-full h-full opacity-60"
+            fill
+            className="object-cover opacity-60"
             referrerPolicy="no-referrer"
           />
         ) : (

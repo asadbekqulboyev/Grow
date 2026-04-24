@@ -1,6 +1,7 @@
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { DownloadCertificateBtn } from '@/components/DownloadCertificateBtn';
 import Link from 'next/link';
+import Image from 'next/image';
 import { MessageSquare, UserCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -27,7 +28,9 @@ export default async function Page() {
           </div>
           <Link href="/profile" className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors border border-gray-100 dark:border-gray-700">
              {data.user.user_metadata?.avatar_url ? (
-               <img src={data.user.user_metadata.avatar_url} alt="Profile" className="w-8 h-8 rounded-full border border-gray-200" />
+               <div className="w-8 h-8 relative rounded-full overflow-hidden border border-gray-200">
+                 <Image src={data.user.user_metadata.avatar_url} alt="Profile" fill className="object-cover" referrerPolicy="no-referrer" />
+               </div>
              ) : (
                <UserCircle className="w-8 h-8 text-gray-400" />
              )}

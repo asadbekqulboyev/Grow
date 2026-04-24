@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { BookOpen, Clock, Star, PlayCircle, Coins, Search, ArrowRight } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Course {
   id: string;
@@ -130,10 +131,11 @@ export default function CoursesPage() {
                 {/* Course Image / Banner */}
                 <div className="h-48 bg-gradient-to-br from-[#A8E6CF] to-[#2D5A27] relative w-full overflow-hidden">
                   {course.image_url && (
-                    <img 
+                    <Image 
                       src={course.image_url} 
                       alt={course.title}
-                      className="object-cover w-full h-full opacity-90 group-hover:scale-105 transition-transform duration-500"
+                      fill
+                      className="object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
                       referrerPolicy="no-referrer"
                     />
                   )}

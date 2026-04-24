@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Settings, BookOpen, Users, Video, LogOut, Plus, Edit2, Trash2, X, HelpCircle } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPanel() {
@@ -288,7 +289,11 @@ export default function AdminPanel() {
                 {courses.map(course => (
                   <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                     <td className="px-4 py-3">
-                      {course.image_url ? <img src={course.image_url} alt="" className="w-12 h-12 object-cover rounded-lg" /> : <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>}
+                      {course.image_url ? (
+                        <div className="w-12 h-12 relative rounded-lg overflow-hidden">
+                          <Image src={course.image_url} alt="" fill className="object-cover" referrerPolicy="no-referrer" />
+                        </div>
+                      ) : <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>}
                     </td>
                     <td className="px-4 py-3 font-medium dark:text-white">{course.title}</td>
                     <td className="px-4 py-3 text-gray-500">{course.category}</td>
