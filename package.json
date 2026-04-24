@@ -2,13 +2,17 @@
   "name": "ai-studio-applet",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.2.4",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "clean": "next clean",
-    "vercel-build": "npm run prepare && next build" 
+    "clean": "next clean"
   },
   "dependencies": {
     "@google/genai": "^1.50.1",
