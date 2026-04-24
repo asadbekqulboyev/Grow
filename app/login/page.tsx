@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -81,8 +82,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col pt-10">
         
         <Link href="/" className="inline-flex flex-col items-center justify-center mb-8 self-center">
-            <div className="w-16 h-16 flex items-center justify-center">
-              <img src="/images/logo.png" alt="Grow.UZ Logo" className="w-full h-full object-contain" />
+            <div className="w-16 h-16 flex items-center justify-center relative">
+              <Image src="/images/logo.png" alt="Grow.UZ Logo" fill className="object-contain" referrerPolicy="no-referrer" />
             </div>
             <span className="font-bold text-gray-900 tracking-tight text-xl mt-2">row.UZ</span>
         </Link>

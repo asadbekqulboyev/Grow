@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, BookOpen, Star, Shield, Cpu, Target, Award, Users, CheckCircle, MessageSquareQuote, PlayCircle, Trophy } from 'lucide-react';
 
 export default function LandingPage() {
@@ -9,8 +10,8 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center">
-            <div className="w-10 h-10 flex items-center justify-center">
-              <img src="/images/logo.png" alt="Grow.UZ Logo" className="w-full h-full object-contain" />
+            <div className="w-10 h-10 flex items-center justify-center relative">
+              <Image src="/images/logo.png" alt="Grow.UZ Logo" fill className="object-contain" referrerPolicy="no-referrer" />
             </div>
           </div>
           <div className="hidden md:flex items-center gap-8 font-medium">
@@ -101,8 +102,7 @@ export default function LandingPage() {
               {/* Course 1 */}
               <div className="bg-[#F3F4F6] dark:bg-gray-800 rounded-3xl overflow-hidden hover:-translate-y-2 transition-transform duration-300 border border-transparent dark:border-gray-700 hover:shadow-xl hover:shadow-[#A8E6CF]/10">
                 <div className="h-48 w-full relative overflow-hidden bg-gray-200 dark:bg-gray-700">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/images/notiqlik.png" alt="Notiqlik" className="w-full h-full object-cover" />
+                  <Image src="https://picsum.photos/seed/notiqlik/800/600" alt="Notiqlik" fill className="object-cover" referrerPolicy="no-referrer" />
                   <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#2D5A27] dark:text-[#A8E6CF]">Top rating</div>
                 </div>
                 <div className="p-6">
@@ -118,8 +118,7 @@ export default function LandingPage() {
               {/* Course 2 */}
               <div className="bg-[#F3F4F6] dark:bg-gray-800 rounded-3xl overflow-hidden hover:-translate-y-2 transition-transform duration-300 border border-transparent dark:border-gray-700 hover:shadow-xl hover:shadow-[#A8E6CF]/10">
                 <div className="h-48 w-full relative overflow-hidden bg-gray-200 dark:bg-gray-700">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/images/smm.png" alt="SMM" className="w-full h-full object-cover" />
+                  <Image src="https://picsum.photos/seed/smm/800/600" alt="SMM" fill className="object-cover" referrerPolicy="no-referrer" />
                 </div>
                 <div className="p-6">
                   <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">SMM va Marketing</h3>
@@ -134,8 +133,7 @@ export default function LandingPage() {
               {/* Course 3 */}
               <div className="bg-[#F3F4F6] dark:bg-gray-800 rounded-3xl overflow-hidden hover:-translate-y-2 transition-transform duration-300 border border-transparent dark:border-gray-700 hover:shadow-xl hover:shadow-[#A8E6CF]/10">
                 <div className="h-48 w-full relative overflow-hidden bg-gray-200 dark:bg-gray-700">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/images/vaqtni-boshqarish.png" alt="Vaqtni boshqarish" className="w-full h-full object-cover" />
+                  <Image src="https://picsum.photos/seed/time/800/600" alt="Vaqtni boshqarish" fill className="object-cover" referrerPolicy="no-referrer" />
                 </div>
                 <div className="p-6">
                   <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Time Management</h3>
@@ -453,10 +451,9 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div className="md:col-span-2">
             <div className="flex items-center mb-4">
-              <div className="w-8 h-8 flex items-center justify-center">
-                <img src="/images/logo.png" alt="Grow.UZ Logo" className="w-full h-full object-contain" />
+              <div className="w-8 h-8 flex items-center justify-center relative">
+                <Image src="/images/logo.png" alt="Grow.UZ Logo" fill className="object-contain" referrerPolicy="no-referrer" />
               </div>
-              <span className="text-xl font-bold tracking-tight text-[#2D5A27] dark:text-[#A8E6CF] mt-0.5 -ml-1">row.UZ</span>
             </div>
             <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm">O&apos;zbekiston yoshlari uchun sifatli va zamonaviy ko&apos;nikmalar taqdim etuvchi innovatsion o&apos;quv platformasi.</p>
           </div>
