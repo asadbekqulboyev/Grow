@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS public.ai_chat_messages (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Configure Row Level Security (RLS) to ensure users can only access their own messages.
+-- 2. Configure Row Level Security (RLS)
 ALTER TABLE public.ai_chat_messages ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can insert their own messages" 
@@ -33,7 +33,7 @@ FOR DELETE
 USING (auth.uid() = user_id);
 
 -- --------------------------------------------------------
--- Supabase SQL Configuration for Courses
+-- Courses Table
 -- --------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.courses (
@@ -48,7 +48,6 @@ CREATE TABLE IF NOT EXISTS public.courses (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Allow all users to read courses
 ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Anyone can view courses" 
@@ -62,7 +61,7 @@ FOR ALL
 USING (true)
 WITH CHECK (true);
 
--- Insert dummy data if table is empty
+-- Insert example courses if table is empty
 INSERT INTO public.courses (title, description, category, level, duration_minutes, reward_coins, image_url)
 SELECT * FROM (VALUES
   ('Notiqlik va nutq sirlari', 'Kishilar oldida hayajonni yengish, o''z fikrini aniq yetkazish va Otabek Mahkamovdan notiqlik sirlari.', 'Notiqlik', 'Boshlang''ich', 60, 150, '/images/notiqlik.png'),
@@ -74,7 +73,7 @@ SELECT * FROM (VALUES
 WHERE NOT EXISTS (SELECT 1 FROM public.courses LIMIT 1);
 
 -- --------------------------------------------------------
--- Supabase SQL Configuration for Lessons
+-- Lessons Table
 -- --------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.lessons (
@@ -88,7 +87,6 @@ CREATE TABLE IF NOT EXISTS public.lessons (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Allow all users to read lessons
 ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Anyone can view lessons" 
@@ -102,14 +100,12 @@ FOR ALL
 USING (true)
 WITH CHECK (true);
 
--- Insert dummy lessons if table is empty
+-- Insert example lessons
 DO $$
 DECLARE
   v_course_id UUID;
 BEGIN
-  -- Only insert if lessons table is empty
   IF NOT EXISTS (SELECT 1 FROM public.lessons LIMIT 1) THEN
-    -- Get the ID of the first course to add lessons to
     SELECT id INTO v_course_id FROM public.courses LIMIT 1;
     
     IF v_course_id IS NOT NULL THEN
@@ -121,3 +117,118 @@ BEGIN
   END IF;
 END $$;
 
+-- --------------------------------------------------------
+-- Quizzes Table
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.quizzes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
+  question TEXT NOT NULL,
+  options JSONB NOT NULL DEFAULT '[]'::jsonb,
+  correct_option_index INTEGER NOT NULL DEFAULT 0,
+  order_index INTEGER NOT NULL DEFAULT 1,
+  reward_coins INTEGER DEFAULT 10,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.quizzes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view quizzes" 
+ON public.quizzes 
+FOR SELECT 
+USING (true);
+
+CREATE POLICY "Admin full access quizzes" 
+ON public.quizzes 
+FOR ALL 
+USING (true)
+WITH CHECK (true);
+
+-- --------------------------------------------------------
+-- User Progress Table (tracking lesson completion)
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.user_progress (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
+  lesson_id UUID REFERENCES public.lessons(id) ON DELETE CASCADE,
+  completed BOOLEAN DEFAULT FALSE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, lesson_id)
+);
+
+ALTER TABLE public.user_progress ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own progress" 
+ON public.user_progress 
+FOR SELECT 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own progress" 
+ON public.user_progress 
+FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own progress" 
+ON public.user_progress 
+FOR UPDATE 
+USING (auth.uid() = user_id);
+
+-- --------------------------------------------------------
+-- User Coins Table (gamification currency)
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.user_coins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,
+  reason TEXT NOT NULL,
+  course_id UUID REFERENCES public.courses(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.user_coins ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own coins" 
+ON public.user_coins 
+FOR SELECT 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own coins" 
+ON public.user_coins 
+FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
+
+-- --------------------------------------------------------
+-- Certificates Table
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.certificates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  cert_code TEXT UNIQUE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
+  student_name TEXT NOT NULL,
+  course_name TEXT NOT NULL,
+  issued_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own certificates" 
+ON public.certificates 
+FOR SELECT 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own certificates" 
+ON public.certificates 
+FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Anyone can view certificates by code" 
+ON public.certificates 
+FOR SELECT 
+USING (true);

@@ -101,8 +101,10 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {/* Course 1 */}
               <div className="bg-[#F3F4F6] dark:bg-gray-800 rounded-3xl overflow-hidden hover:-translate-y-2 transition-transform duration-300 border border-transparent dark:border-gray-700 hover:shadow-xl hover:shadow-[#A8E6CF]/10">
-                <div className="h-48 w-full relative overflow-hidden bg-gray-200 dark:bg-gray-700">
-                  <Image src="https://picsum.photos/seed/notiqlik/800/600" alt="Notiqlik" fill className="object-cover" referrerPolicy="no-referrer" />
+                <div className="h-48 w-full relative overflow-hidden bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <BookOpen className="w-16 h-16 text-white/30" />
+                  </div>
                   <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#2D5A27] dark:text-[#A8E6CF]">Top rating</div>
                 </div>
                 <div className="p-6">
@@ -117,8 +119,10 @@ export default function LandingPage() {
 
               {/* Course 2 */}
               <div className="bg-[#F3F4F6] dark:bg-gray-800 rounded-3xl overflow-hidden hover:-translate-y-2 transition-transform duration-300 border border-transparent dark:border-gray-700 hover:shadow-xl hover:shadow-[#A8E6CF]/10">
-                <div className="h-48 w-full relative overflow-hidden bg-gray-200 dark:bg-gray-700">
-                  <Image src="https://picsum.photos/seed/smm/800/600" alt="SMM" fill className="object-cover" referrerPolicy="no-referrer" />
+                <div className="h-48 w-full relative overflow-hidden bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Target className="w-16 h-16 text-white/30" />
+                  </div>
                 </div>
                 <div className="p-6">
                   <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">SMM va Marketing</h3>
@@ -132,8 +136,10 @@ export default function LandingPage() {
 
               {/* Course 3 */}
               <div className="bg-[#F3F4F6] dark:bg-gray-800 rounded-3xl overflow-hidden hover:-translate-y-2 transition-transform duration-300 border border-transparent dark:border-gray-700 hover:shadow-xl hover:shadow-[#A8E6CF]/10">
-                <div className="h-48 w-full relative overflow-hidden bg-gray-200 dark:bg-gray-700">
-                  <Image src="https://picsum.photos/seed/time/800/600" alt="Vaqtni boshqarish" fill className="object-cover" referrerPolicy="no-referrer" />
+                <div className="h-48 w-full relative overflow-hidden bg-gradient-to-br from-amber-400 via-orange-500 to-red-500">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Shield className="w-16 h-16 text-white/30" />
+                  </div>
                 </div>
                 <div className="p-6">
                   <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Time Management</h3>

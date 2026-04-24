@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { BookOpen, Clock, Star, PlayCircle, Coins, Search, ArrowRight } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -29,11 +29,12 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('Barchasi');
-
-  const supabase = createClient();
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     let isMounted = true;
+    const supabase = createClient();
+
     async function fetchCourses() {
       setIsLoading(true);
       try {
@@ -64,14 +65,32 @@ export default function CoursesPage() {
     return () => {
       isMounted = false;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const categories = ['Barchasi', ...Array.from(new Set(courses.map(c => c.category)))];
+  const categories = useMemo(() => {
+    return ['Barchasi', ...Array.from(new Set(courses.map(c => c.category)))];
+  }, [courses]);
 
-  const filteredCourses = activeCategory === 'Barchasi' 
-    ? courses 
-    : courses.filter(c => c.category === activeCategory);
+  const filteredCourses = useMemo(() => {
+    let result = courses;
+
+    // Category filter
+    if (activeCategory !== 'Barchasi') {
+      result = result.filter(c => c.category === activeCategory);
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(c => 
+        c.title.toLowerCase().includes(q) || 
+        c.description.toLowerCase().includes(q) ||
+        c.category.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [courses, activeCategory, searchQuery]);
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#F3F4F6] dark:bg-[#111827] transition-colors duration-300">
@@ -97,6 +116,8 @@ export default function CoursesPage() {
             <input 
               type="text" 
               placeholder="Kurs yoki mavzu qidiring..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm focus:ring-2 focus:ring-[#A8E6CF] dark:text-white placeholder-gray-400 outline-none transition-shadow"
             />
           </div>
@@ -123,6 +144,14 @@ export default function CoursesPage() {
           <div className="flex items-center justify-center py-20">
              <div className="w-10 h-10 border-4 border-gray-200 border-t-[#2D5A27] dark:border-gray-800 dark:border-t-[#A8E6CF] rounded-full animate-spin"></div>
           </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Search className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Natija topilmadi</h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md">
+              &quot;{searchQuery}&quot; bo&apos;yicha kurs topilmadi. Boshqa kalit so&apos;z bilan qidirib ko&apos;ring.
+            </p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCourses.map((course) => (
@@ -139,7 +168,6 @@ export default function CoursesPage() {
                       referrerPolicy="no-referrer"
                     />
                   )}
-                  {/* Overlay gradent for readability */}
                   {course.image_url && <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>}
                   
                   <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-bold shadow-sm z-10 border border-white/20">

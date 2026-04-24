@@ -21,7 +21,7 @@ export function Sidebar() {
         <div className="w-10 h-10 flex items-center justify-center relative">
           <Image src="/images/logo.png" alt="Grow.UZ Logo" fill className="object-contain" referrerPolicy="no-referrer" />
         </div>
-        <span className="text-2xl font-bold tracking-tight text-[#2D5A27] dark:text-[#A8E6CF] mt-1 -ml-1">row.UZ</span>
+        <span className="text-2xl font-bold tracking-tight text-[#2D5A27] dark:text-[#A8E6CF] mt-1 -ml-1">Grow.UZ</span>
       </div>
 
       <nav className="space-y-2 flex-1">

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { Send, User as UserIcon, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -25,10 +24,9 @@ export default function AIMentorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [chatInitialized, setChatInitialized] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const chatRef = useRef<any>(null);
   const supabase = createClient();
 
   const scrollToBottom = () => {
@@ -39,29 +37,18 @@ export default function AIMentorPage() {
     scrollToBottom();
   }, [messages, isLoading]);
 
-  // Load chat history and initialize GenAI
+  // Load chat history from Supabase
   useEffect(() => {
     let isMounted = true;
     
     const initChat = async () => {
       try {
-        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-        if (!apiKey) {
-          if (isMounted) setError("API kaliti topilmadi. Iltimos sozlarni tekshiring.");
-          return;
-        }
-
-        const ai = new GoogleGenAI({ apiKey });
-        
-        // 1. Try to get Supabase User
         const { data: { session } } = await supabase.auth.getSession();
         const currentUserId = session?.user?.id || null;
         
-        let loadedHistory: Message[] = [];
-        
         if (currentUserId && isMounted) {
           setUserId(currentUserId);
-          // 2. Load History from Supabase
+          
           const { data: dbMessages, error: dbError } = await supabase
             .from('ai_chat_messages')
             .select('*')
@@ -69,37 +56,21 @@ export default function AIMentorPage() {
             .order('created_at', { ascending: true });
             
           if (!dbError && dbMessages && dbMessages.length > 0) {
-            loadedHistory = dbMessages.map(msg => ({
+            const loadedHistory = dbMessages.map(msg => ({
               id: msg.id,
               role: msg.role as 'user' | 'model',
               parts: [{ text: msg.content }]
             }));
             setMessages(loadedHistory);
           } else if (dbError) {
-             console.warn("Supabase chat tarixi yuklanmadi (jadval mavjud emas bo'lishi mumkin):", dbError.message);
+            console.warn("Chat tarixi yuklanmadi:", dbError.message);
           }
         }
         
-        // Exclude UI "welcome" message from GenAI context if there's history, but if no history, just pass empty array.
-        const formatForGenAI = loadedHistory.length > 0 ? loadedHistory.map(msg => ({
-          role: msg.role,
-          parts: msg.parts
-        })) : [];
-
-        // 3. Initialize GenAI Chat
-        chatRef.current = ai.chats.create({
-          model: 'gemini-2.5-flash',
-          history: formatForGenAI,
-          config: {
-            systemInstruction: "Siz Grow.UZ platformasining rasmiy AI Mentor isisiz. Sizning maqsadingiz yoshlarga (asosan maktab va universitet talabalari) 'soft skills' ya'ni 'yumshoq ko'nikmalar'ni urgatish: vaqtni boshqarish, ommaviy nutq, yetakchilik, jamoaviy ishlash va h.k. Doim samimiy, tushunarli va ruhlantiruvchi tilda o'zbek tilida javob bering. Javoblaringizni Markdown formatida qulay va chiroyli tartibda taqdim eting.",
-            temperature: 0.7,
-          }
-        });
-        
-        if (isMounted) setChatInitialized(true);
+        if (isMounted) setIsReady(true);
         
       } catch (err: any) {
-        if (isMounted) setError(err.message || 'AI Mentorni ishga tushirishda xatolik yuz berdi.');
+        if (isMounted) setError(err.message || 'AI Mentorni ishga tushirishda xatolik.');
       }
     };
 
@@ -113,7 +84,7 @@ export default function AIMentorPage() {
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!inputValue.trim() || isLoading || !chatInitialized) return;
+    if (!inputValue.trim() || isLoading || !isReady) return;
 
     const userText = inputValue;
     setInputValue('');
@@ -125,14 +96,11 @@ export default function AIMentorPage() {
       parts: [{ text: userText }],
     };
 
-    setMessages((prev) => [...prev, newUserMsg]);
+    const updatedMessages = [...messages, newUserMsg];
+    setMessages(updatedMessages);
     setIsLoading(true);
 
     try {
-      if (!chatRef.current) {
-         throw new Error("Chat to'liq ishga tushmadi. Ilova API kaliti to'g'ri ekanligiga ishonch hosil qiling.");
-      }
-
       // Save user message to Supabase
       if (userId) {
         await supabase.from('ai_chat_messages').insert({
@@ -141,23 +109,42 @@ export default function AIMentorPage() {
           content: userText
         });
       }
-      
-      const response = await chatRef.current.sendMessage({ message: userText });
-      
+
+      // Prepare history for API (exclude welcome message)
+      const historyForAPI = updatedMessages
+        .filter(m => m.id !== 'welcome')
+        .slice(0, -1) // exclude the current user message (it goes as 'message')
+        .map(m => ({ role: m.role, parts: m.parts }));
+
+      const response = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userText,
+          history: historyForAPI,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Server xatosi');
+      }
+
       const aiResponseMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'model',
-        parts: [{ text: response.text }],
+        parts: [{ text: data.text }],
       };
 
-      setMessages((prev) => [...prev, aiResponseMsg]);
+      setMessages(prev => [...prev, aiResponseMsg]);
       
       // Save AI message to Supabase
-      if (userId && response.text) {
+      if (userId && data.text) {
         await supabase.from('ai_chat_messages').insert({
           user_id: userId,
           role: 'model',
-          content: response.text
+          content: data.text
         });
       }
       
@@ -242,7 +229,7 @@ export default function AIMentorPage() {
                </div>
                <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl rounded-tl-sm p-5 shadow-sm flex items-center justify-center gap-2">
                  <Loader2 className="w-5 h-5 text-[#2D5A27] dark:text-[#A8E6CF] animate-spin" />
-                 <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">O'ylanmoqda...</span>
+                 <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">O&apos;ylanmoqda...</span>
                </div>
             </div>
           )}
@@ -262,7 +249,7 @@ export default function AIMentorPage() {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Savolingizni yozing..."
-                className="w-full max-h-40 min-h-[56px] bg-transparent resize-none border-none focus:ring-0 px-6 py-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm"
+                className="w-full max-h-40 min-h-[56px] bg-transparent resize-none border-none focus:ring-0 px-6 py-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm outline-none"
                 rows={1}
               />
               <button 

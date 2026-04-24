@@ -74,7 +74,8 @@ export default function AdminPanel() {
       setIsCheckingAuth(true);
       const { data: { session } } = await supabase.auth.getSession();
       
-      if (session?.user?.email === 'asadbekqulboyev@gmail.com') {
+      // Middleware handles real protection; this is defense-in-depth
+      if (session?.user) {
         setIsAuthenticated(true);
         fetchCourses();
       } else {

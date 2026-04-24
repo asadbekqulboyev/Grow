@@ -36,18 +36,16 @@ export default function CourseDetailsPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  const supabase = createClient();
 
   useEffect(() => {
+    if (!courseId) return;
     let isMounted = true;
+    const supabase = createClient();
     
     async function fetchCourseDetails() {
-      if (!courseId) return;
       setIsLoading(true);
       
       try {
-        // Fetch course details
         const { data: courseData, error: courseError } = await supabase
           .from('courses')
           .select('*')
@@ -56,7 +54,6 @@ export default function CourseDetailsPage() {
           
         if (courseError) throw courseError;
         
-        // Fetch lessons for this course
         const { data: lessonsData, error: lessonsError } = await supabase
           .from('lessons')
           .select('*')
@@ -81,7 +78,7 @@ export default function CourseDetailsPage() {
     return () => {
       isMounted = false;
     };
-  }, [courseId, supabase]);
+  }, [courseId]);
 
   if (isLoading) {
     return (
@@ -106,6 +103,8 @@ export default function CourseDetailsPage() {
     );
   }
 
+  const firstLesson = lessons[0];
+
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-gray-50 dark:bg-[#111827] transition-colors duration-300">
       {/* Dynamic Header Banner */}
@@ -122,11 +121,9 @@ export default function CourseDetailsPage() {
           <div className="absolute inset-0 bg-gradient-to-br from-[#1b3d16] to-[#0d210b]"></div>
         )}
         
-        {/* Gradients to blend with content */}
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-gray-50 dark:from-[#111827] to-transparent z-10"></div>
         <div className="absolute inset-0 bg-black/40 z-0"></div>
 
-        {/* Content over image */}
         <div className="absolute inset-0 z-20 flex flex-col p-8 max-w-5xl mx-auto w-full">
           <button 
             onClick={() => router.back()}
@@ -136,7 +133,7 @@ export default function CourseDetailsPage() {
           </button>
           
           <div className="mt-auto pb-10">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
               <span className="bg-[#A8E6CF] text-[#111827] text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
                 {course.category}
               </span>
@@ -184,15 +181,16 @@ export default function CourseDetailsPage() {
             ) : (
               <div className="flex flex-col gap-4">
                 {lessons.map((lesson, index) => (
-                  <div key={lesson.id} className="group flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 hover:border-[#2D5A27]/30 dark:hover:border-[#A8E6CF]/30 transition-all hover:shadow-sm cursor-pointer">
-                    
+                  <Link 
+                    key={lesson.id} 
+                    href={`/courses/${courseId}/lesson/${lesson.id}`}
+                    className="group flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 hover:border-[#2D5A27]/30 dark:hover:border-[#A8E6CF]/30 transition-all hover:shadow-sm"
+                  >
                     <div className="flex items-center gap-4 flex-1">
-                      {/* Status Icon */}
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${index === 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700'}`}>
-                        {index === 0 ? <PlayCircle className="w-5 h-5 fill-current" /> : index === 1 ? <Lock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                        {index === 0 ? <PlayCircle className="w-5 h-5 fill-current" /> : <Lock className="w-4 h-4" />}
                       </div>
                       
-                      {/* Lesson info */}
                       <div>
                         <h4 className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#2D5A27] dark:group-hover:text-[#A8E6CF] transition-colors line-clamp-1">
                           {lesson.order_index}. {lesson.title}
@@ -203,12 +201,11 @@ export default function CourseDetailsPage() {
                       </div>
                     </div>
                     
-                    {/* Duration Badge */}
                     <div className="flex items-center text-xs font-semibold text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 w-fit self-end sm:self-auto shrink-0 group-hover:border-gray-300 dark:group-hover:border-gray-600 transition-colors">
                       <Clock className="w-3.5 h-3.5 mr-1.5" />
                       {lesson.duration_minutes} daq
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -239,10 +236,20 @@ export default function CourseDetailsPage() {
                </li>
             </ul>
 
-            <button className="w-full bg-[#2D5A27] hover:bg-[#1f421a] dark:bg-[#A8E6CF] dark:hover:bg-[#86d4b8] text-white dark:text-[#111827] py-4 rounded-xl font-bold transition-colors mb-3 flex items-center justify-center gap-2">
-              <PlayCircle className="w-5 h-5" />
-              Kursni boshlash
-            </button>
+            {firstLesson ? (
+              <Link 
+                href={`/courses/${courseId}/lesson/${firstLesson.id}`}
+                className="w-full bg-[#2D5A27] hover:bg-[#1f421a] dark:bg-[#A8E6CF] dark:hover:bg-[#86d4b8] text-white dark:text-[#111827] py-4 rounded-xl font-bold transition-colors mb-3 flex items-center justify-center gap-2"
+              >
+                <PlayCircle className="w-5 h-5" />
+                Kursni boshlash
+              </Link>
+            ) : (
+              <button disabled className="w-full bg-gray-200 dark:bg-gray-800 text-gray-400 py-4 rounded-xl font-bold cursor-not-allowed mb-3 flex items-center justify-center gap-2">
+                <PlayCircle className="w-5 h-5" />
+                Darslar hali mavjud emas
+              </button>
+            )}
             <p className="text-xs text-center text-gray-500 dark:text-gray-400">
               Kursni to&apos;liq tugatib {course.reward_coins} tanga yutib oling
             </p>

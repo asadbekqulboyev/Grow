@@ -33,9 +33,9 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
         backgroundColor: '#FFFFFF',
       });
       
-      // We know our CertificateTemplate is fixed at 800x600 size
-      const width = 800;
-      const height = 600;
+      // CertificateTemplate is fixed at 1000x707 size (A4 landscape ratio)
+      const width = 1000;
+      const height = 707;
 
       const pdf = new jsPDF({
         orientation: 'landscape',
