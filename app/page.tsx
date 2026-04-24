@@ -12,7 +12,6 @@ export default function LandingPage() {
             <div className="w-10 h-10 flex items-center justify-center">
               <img src="/images/logo.png" alt="Grow.UZ Logo" className="w-full h-full object-contain" />
             </div>
-            <span className="text-2xl font-bold tracking-tight text-[#2D5A27] dark:text-[#A8E6CF] mt-5">row.UZ</span>
           </div>
           <div className="hidden md:flex items-center gap-8 font-medium">
             <Link href="#courses" className="hover:text-[#2D5A27] dark:hover:text-[#A8E6CF] transition-colors">Kurslar</Link>
