@@ -12,7 +12,12 @@ const languages = [
 export function LanguageSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState('uz');
+  const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -27,8 +32,12 @@ export function LanguageSwitcher() {
 
   const selectedLang = languages.find(l => l.code === currentLang) || languages[0];
 
+  if (!mounted) {
+    return <div className="w-24 h-9 bg-[#F3F4F6] dark:bg-gray-800 rounded-full animate-pulse hidden sm:block"></div>;
+  }
+
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} suppressHydrationWarning>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 bg-[#F3F4F6] dark:bg-gray-800 px-3 sm:px-4 py-2 rounded-full transition-colors duration-300 hover:bg-gray-200 dark:hover:bg-gray-700"

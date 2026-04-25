@@ -95,22 +95,22 @@ export default function CoursesPage() {
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#F3F4F6] dark:bg-[#111827] transition-colors duration-300">
       {/* Header */}
-      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-8 z-10 sticky top-0 transition-colors duration-300">
+      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-[15px] sm:px-8 z-10 sticky top-0 transition-colors duration-300">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#A8E6CF] to-[#2D5A27] flex items-center justify-center shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#A8E6CF] to-[#2D5A27] flex items-center justify-center shadow-sm shrink-0">
             <BookOpen className="w-5 h-5 text-white" />
           </div>
-          <h2 className="text-xl font-bold dark:text-white">Barcha Kurslar</h2>
+          <h2 className="text-lg sm:text-xl font-bold dark:text-white truncate">Barcha Kurslar</h2>
         </div>
-        <div className="flex items-center gap-3 sm:gap-6">
+        <div className="flex items-center gap-3 sm:gap-6 shrink-0">
           <LanguageSwitcher />
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="p-8 pb-24 max-w-7xl mx-auto w-full">
+      <div className="px-[15px] sm:px-8 py-6 sm:py-8 pb-24 max-w-7xl mx-auto w-full">
         {/* Search & Filter Bar */}
-        <div className="mb-8 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+        <div className="mb-6 sm:mb-8 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
           <div className="relative w-full md:w-96">
             <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 

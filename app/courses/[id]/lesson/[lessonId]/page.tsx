@@ -182,25 +182,25 @@ export default function LessonPage() {
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#F3F4F6] dark:bg-[#111827] transition-colors duration-300">
       {/* Header */}
-      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-8 z-10 sticky top-0 transition-colors duration-300">
+      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-[15px] sm:px-8 z-10 sticky top-0 transition-colors duration-300">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push(`/courses/${courseId}`)} className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors">
+          <button onClick={() => router.push(`/courses/${courseId}`)} className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors shrink-0">
             <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">{course.title}</p>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-1">{lesson.order_index}. {lesson.title}</h2>
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{course.title}</p>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{lesson.order_index}. {lesson.title}</h2>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-[#2D5A27] dark:text-[#A8E6CF] bg-[#A8E6CF]/20 px-3 py-1.5 rounded-full">
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          <span className="text-xs font-semibold text-[#2D5A27] dark:text-[#A8E6CF] bg-[#A8E6CF]/20 px-3 py-1.5 rounded-full whitespace-nowrap">
             {currentIndex + 1} / {allLessons.length}
           </span>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 p-4 sm:p-8 pb-24 max-w-5xl mx-auto w-full">
+      <div className="flex-1 px-[15px] sm:px-8 py-4 sm:py-8 pb-24 max-w-5xl mx-auto w-full">
         
         {/* Testing State UI */}
         {testMode && !isCompleted ? (

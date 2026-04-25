@@ -62,8 +62,15 @@ export default async function Page() {
   return (
     <div className="flex-1 flex flex-col min-h-screen">
       {/* Top Header */}
-      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-8 z-10 sticky top-0 transition-colors duration-300">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white transition-colors">Xush kelibsiz, {data.user.user_metadata?.full_name?.split(' ')[0] || 'Foydalanuvchi'}!</h2>
+      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-[15px] sm:px-8 z-10 sticky top-0 transition-colors duration-300 gap-2">
+        <div className="flex items-center">
+          <Link href="/dashboard" className="sm:hidden flex items-center">
+            <img src="/images/logo.svg" alt="Grow.uz" className="h-8 object-contain dark:invert" />
+          </Link>
+          <h2 className="hidden sm:block text-xl font-bold text-gray-900 dark:text-white transition-colors truncate">
+            Salom, {data.user.user_metadata?.full_name?.split(' ')[0] || 'Foydalanuvchi'}!
+          </h2>
+        </div>
         <div className="flex items-center gap-3 sm:gap-6">
           <LanguageSwitcher />
           <div className="flex items-center gap-2 bg-[#F3F4F6] dark:bg-gray-800 px-4 py-2 rounded-full transition-colors duration-300">
@@ -84,18 +91,18 @@ export default async function Page() {
       </header>
 
       {/* Dashboard Content */}
-      <div className="p-8 grid grid-cols-1 md:grid-cols-12 gap-6 pb-24">
+      <div className="px-[15px] sm:px-8 py-4 sm:py-8 grid grid-cols-1 md:grid-cols-12 gap-6 pb-6 sm:pb-24">
         
         {/* Left Column: Growth Tree */}
         <div className="md:col-span-12 lg:col-span-7">
-          <div className="bg-white dark:bg-gray-800 rounded-[32px] p-8 h-[480px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center relative transition-colors duration-300">
-            <div className="absolute top-6 left-8 w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-[32px] p-5 sm:p-8 h-[380px] sm:h-[480px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center relative transition-colors duration-300">
+            <div className="absolute top-6 left-6 sm:left-8 w-full">
               <h3 className="text-lg font-bold text-[#2D5A27] dark:text-[#A8E6CF] transition-colors">Sizning daraxtingiz</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">Level {treeLevel}: {treeLevelName}</p>
             </div>
             
             {/* Visual Tree Representation */}
-            <div className="flex-1 w-full flex items-end justify-center pb-10">
+            <div className="flex-1 w-full flex items-end justify-center pb-6 sm:pb-10 transform scale-75 sm:scale-100 origin-bottom">
               <div className="relative">
                 {/* Trunk */}
                 <div className="w-6 h-48 bg-[#4d3a2c] mx-auto rounded-t-lg"></div>
@@ -123,18 +130,18 @@ export default async function Page() {
         {/* Right Column: Stats & Certificates */}
         <div className="md:col-span-12 lg:col-span-5 flex flex-col gap-6">
           <div className="grid grid-cols-2 gap-4">
-             <div className="bg-white dark:bg-gray-800 p-5 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+             <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-[24px] rounded-bl-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
                <p className="text-gray-400 dark:text-gray-500 text-xs font-bold uppercase mb-1 transition-colors">Faol kunlar</p>
-               <p className="text-2xl font-bold text-[#2D5A27] dark:text-[#A8E6CF] transition-colors">{uniqueDays} Kun</p>
+               <p className="text-xl sm:text-2xl font-bold text-[#2D5A27] dark:text-[#A8E6CF] transition-colors">{uniqueDays} Kun</p>
              </div>
-             <div className="bg-white dark:bg-gray-800 p-5 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+             <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-[24px] rounded-br-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
                <p className="text-gray-400 dark:text-gray-500 text-xs font-bold uppercase mb-1 transition-colors">Kurslar</p>
-               <p className="text-2xl font-bold text-[#2D5A27] dark:text-[#A8E6CF] transition-colors">{completedCourseIds.length} yakunlandi</p>
+               <p className="text-xl sm:text-2xl font-bold text-[#2D5A27] dark:text-[#A8E6CF] transition-colors">{completedCourseIds.length} <span className="hidden sm:inline">yakunlandi</span><span className="sm:hidden">ta</span></p>
              </div>
           </div>
           
           {/* Recent Certificate Preview */}
-          <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-[328px] transition-colors duration-300">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-[280px] sm:h-[328px] transition-colors duration-300 z-0">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-gray-900 dark:text-white transition-colors">Oxirgi Sertifikat</h3>
               <Link href="/profile" className="text-xs font-semibold text-[#2D5A27] dark:text-[#A8E6CF] underline transition-colors">Barchasi</Link>
@@ -145,13 +152,13 @@ export default async function Page() {
                     <div className="w-8 h-8 bg-[#2D5A27] dark:bg-[#1e3c1a] rounded-sm text-white flex items-center justify-center font-bold font-serif transition-colors">G</div>
                     <div className="text-[8px] text-right text-gray-400 dark:text-gray-400">ID: {latestCert.cert_code}</div>
                 </div>
-                <div className="mt-4 text-center">
-                    <h4 className="text-[14px] font-serif italic text-gray-800 dark:text-gray-200 transition-colors">Mualliflik Sertifikati</h4>
-                    <div className="h-[1px] w-12 bg-[#A8E6CF] dark:bg-[#2D5A27] mx-auto my-2 transition-colors"></div>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400 transition-colors">taqdirlandi</p>
-                    <p className="text-sm font-bold text-[#2D5A27] dark:text-[#A8E6CF] mt-1 transition-colors">{latestCert.student_name}</p>
-                    <p className="text-[8px] mt-2 text-gray-600 dark:text-gray-400 transition-colors">quyidagi kursni tugatgani uchun:</p>
-                    <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 transition-colors">{latestCert.course_name}</p>
+                <div className="mt-2 sm:mt-4 text-center">
+                    <h4 className="text-[12px] sm:text-[14px] font-serif italic text-gray-800 dark:text-gray-200 transition-colors">Mualliflik Sertifikati</h4>
+                    <div className="h-[1px] w-12 bg-[#A8E6CF] dark:bg-[#2D5A27] mx-auto my-1 sm:my-2 transition-colors"></div>
+                    <p className="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400 transition-colors">taqdirlandi</p>
+                    <p className="text-sm font-bold text-[#2D5A27] dark:text-[#A8E6CF] mt-1 transition-colors line-clamp-1">{latestCert.student_name}</p>
+                    <p className="text-[8px] mt-1 sm:mt-2 text-gray-600 dark:text-gray-400 transition-colors">quyidagi kursni tugatgani uchun:</p>
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-800 dark:text-gray-200 transition-colors line-clamp-2">{latestCert.course_name}</p>
                 </div>
               </div>
             ) : (
@@ -168,17 +175,17 @@ export default async function Page() {
       </div>
       
       {/* Active Course Bar */}
-      <div className="mx-8 mt-auto mb-8 bg-[#A8E6CF] dark:bg-[#2D5A27] rounded-[24px] p-4 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm transition-colors duration-300">
-          <div className="flex items-center gap-4 w-full sm:w-auto">
-              <Link href="/courses" className="w-12 h-12 flex-shrink-0 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center font-bold text-[#2D5A27] dark:text-[#A8E6CF] shadow-sm tracking-tighter transition-colors">▶</Link>
-              <div>
-                  <p className="text-[10px] font-bold text-[#2D5A27]/60 dark:text-[#A8E6CF]/60 uppercase tracking-wider mb-0.5 transition-colors">Kurslar</p>
-                  <p className="font-bold text-[#2D5A27] dark:text-white text-sm line-clamp-1 transition-colors">O&apos;rganishni davom eting</p>
+      <div className="mx-4 sm:mx-8 mt-auto mb-28 sm:mb-8 bg-[#A8E6CF] dark:bg-[#2D5A27] rounded-[24px] p-4 flex gap-4 items-center justify-between shadow-sm transition-colors duration-300 relative z-10">
+          <div className="flex items-center gap-3 sm:gap-4 flex-1">
+              <Link href="/courses" className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center font-bold text-[#2D5A27] dark:text-[#A8E6CF] shadow-sm tracking-tighter transition-colors">▶</Link>
+              <div className="flex-1 min-w-0">
+                  <p className="text-[9px] sm:text-[10px] font-bold text-[#2D5A27]/60 dark:text-[#A8E6CF]/60 uppercase tracking-wider mb-0.5 transition-colors">Kurslar</p>
+                  <p className="font-bold text-[#2D5A27] dark:text-white text-xs sm:text-sm truncate transition-colors">O&apos;rganishni davom eting</p>
               </div>
           </div>
-          <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto justify-end">
-              <Link href="/courses" className="px-6 py-2 bg-[#2D5A27] dark:bg-[#A8E6CF] text-white dark:text-[#1e3c1a] rounded-full text-xs font-bold shadow-lg hover:scale-105 transition-all whitespace-nowrap">
-                Kurslarga o&apos;tish
+          <div className="flex items-center shrink-0">
+              <Link href="/courses" className="px-4 py-2 sm:px-6 sm:py-2 bg-[#2D5A27] dark:bg-[#A8E6CF] text-white dark:text-[#1e3c1a] rounded-full text-[10px] sm:text-xs font-bold shadow-lg hover:scale-105 transition-all whitespace-nowrap">
+                O&apos;tish
               </Link>
           </div>
       </div>

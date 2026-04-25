@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Compass, ShoppingBag, User, Sparkles } from 'lucide-react'
@@ -7,6 +8,11 @@ import { motion } from 'motion/react'
 
 export function BottomNav() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -23,8 +29,12 @@ export function BottomNav() {
     { name: 'Profil', path: '/profile', icon: User },
   ];
 
+  if (!mounted) {
+    return <div className="fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 sm:hidden z-50"></div>;
+  }
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-safe pt-2 px-2 sm:hidden shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] transition-colors duration-300">
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-safe pt-2 px-2 sm:hidden shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] transition-colors duration-300" suppressHydrationWarning>
       {navItems.map((item) => {
         const active = isActive(item.path);
         const Icon = item.icon;

@@ -1,4 +1,8 @@
--- 1. Rollarni saqlash uchun maxsus xavfsiz jadval
+-- ========================================================
+-- 1. ROLLARI BOSHQRISH VА BARCHA JADVALLARNI XAVFSIZLASH
+-- ========================================================
+
+-- Rollarni saqlash uchun maxsus xavfsiz jadval
 CREATE TABLE IF NOT EXISTS public.user_roles (
    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
    role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'mentor', 'admin', 'superadmin')),
@@ -10,7 +14,15 @@ ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Foydalanuvchilar o'z rollarini ko'rishi mumkin" ON public.user_roles;
 CREATE POLICY "Foydalanuvchilar o'z rollarini ko'rishi mumkin" ON public.user_roles FOR SELECT USING (auth.uid() = user_id);
 
--- 2. Rolni o'zgartirish uchun maxfiy API (Faqat Asosiy Admin uchun)
+-- Agar progress jadvallari chala chuzul bo'lsa darhol tuzatamiz
+ALTER TABLE public.user_progress ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT TRUE;
+ALTER TABLE public.user_progress ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP WITH TIME ZONE;
+
+
+-- ========================================================
+-- 2. ROLNI O'ZGARTIRISH (Front-End dan keluvchi sorov uchun)
+-- ========================================================
+
 CREATE OR REPLACE FUNCTION public.set_user_role(target_user_id UUID, new_role TEXT)
 RETURNS void
 LANGUAGE plpgsql
@@ -18,7 +30,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  -- Xavfsizlik: Buni faqat "Superadmin" lavozimidagi yagona shaxs bajara oladi
+  -- Xavfsizlik: Buni faqat "Superadmin" bajara oladi
   IF NOT ((SELECT auth.jwt()->>'email') IN ('asadbekqulboyev@gmail.com')) THEN
      RAISE EXCEPTION 'Ushbu amal faqata Asosiy Super Admin uchun ruxsat etilgan!';
   END IF;
@@ -29,7 +41,12 @@ BEGIN
 END;
 $$;
 
--- 3. Eski users statistika funksiyasini yangilash (Endi Rol ham chiqadi)
+
+-- ========================================================
+-- 3. FOYDALANUVCHILAR STATISTIKASI + ROLI BILAN
+-- ========================================================
+
+-- Tip xatolarini oldini olish uchun eskini yo'q qilish
 DROP FUNCTION IF EXISTS public.get_all_users_stats();
 
 CREATE OR REPLACE FUNCTION public.get_all_users_stats()
@@ -48,10 +65,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT ((SELECT auth.jwt()->>'email') IN ('asadbekqulboyev@gmail.com')) THEN
-     RAISE EXCEPTION 'Ushbu ma''lumotga faqat Asosiy Admin ruxsatiga ega!';
-  END IF;
-
+  
   RETURN QUERY
   SELECT 
       u.id, 

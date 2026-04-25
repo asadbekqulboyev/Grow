@@ -130,6 +130,18 @@ export default function AdminPanel() {
     setIsLoading(false);
   };
 
+  const changeUserRole = async (userId: string, newRole: string) => {
+    setIsLoading(true);
+    const { error } = await supabase.rpc('set_user_role', { target_user_id: userId, new_role: newRole });
+    if (error) {
+      toast.error("Rolni o'zgartirishda xatolik: " + error.message);
+    } else {
+      toast.success("Ruxsat muvaffaqiyatli o'zgartirildi!");
+      fetchUsers();
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       setIsCheckingAuth(true);
@@ -664,7 +676,9 @@ export default function AdminPanel() {
                   <th className="px-4 py-4 rounded-tl-xl">F.I.SH & Email</th>
                   <th className="px-4 py-4 text-center">Tugatgan darslar</th>
                   <th className="px-4 py-4 text-center">Sertifikatlar</th>
-                  <th className="px-4 py-4 text-center rounded-tr-xl">Jamg'argan tangalari</th>
+                  <th className="px-4 py-4 text-center">Jamg'argan tangalari</th>
+                  <th className="px-4 py-4 text-center">Rol (Lavozim)</th>
+                  <th className="px-4 py-4 rounded-tr-xl text-right">Amallar</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -704,6 +718,24 @@ export default function AdminPanel() {
                        <span className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 font-bold shadow-sm whitespace-nowrap">
                           <Coins className="w-4 h-4" /> {user.total_coins}
                        </span>
+                    </td>
+                    <td className="px-4 py-4 text-center min-w-[130px]">
+                      <select 
+                        value={user.role || 'student'} 
+                        onChange={(e) => changeUserRole(user.id, e.target.value)}
+                        disabled={isLoading || user.email === 'asadbekqulboyev@gmail.com'}
+                        className="bg-gray-50 border border-gray-200 text-gray-900 text-xs rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-800 dark:border-gray-700 dark:text-white disabled:opacity-50 font-bold transition-all"
+                      >
+                        <option value="student">O'quvchi</option>
+                        <option value="mentor">Mentor</option>
+                        <option value="admin">Admin</option>
+                        <option value="superadmin">Super Admin</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                       <button onClick={() => toast("Ushbu foydalanuvchini bloklash yoki o'chirish keyingi versiya orqali boshqariladi.", { icon: '🔒' })} title="Qo'shimcha amallar" className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                          <LogOut className="w-4 h-4" />
+                       </button>
                     </td>
                   </tr>
                 ))}
