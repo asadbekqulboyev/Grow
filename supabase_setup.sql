@@ -124,6 +124,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS public.quizzes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
+  lesson_id UUID REFERENCES public.lessons(id) ON DELETE CASCADE,
   question TEXT NOT NULL,
   options JSONB NOT NULL DEFAULT '[]'::jsonb,
   correct_option_index INTEGER NOT NULL DEFAULT 0,

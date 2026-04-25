@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Settings, BookOpen, Users, Video, LogOut, Plus, Edit2, Trash2, X, HelpCircle, Youtube, Eye, Coins, Upload, Loader2 } from 'lucide-react';
+import { Settings, BookOpen, Users, Video, LogOut, Plus, Edit2, Trash2, X, HelpCircle, Youtube, Eye, Coins, Upload, Loader2, FileSpreadsheet } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -71,6 +71,7 @@ export default function AdminPanel() {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+  const [selectedLessonIdForFilter, setSelectedLessonIdForFilter] = useState<string>('');
   const [lessonForm, setLessonForm] = useState({
     course_id: '', title: '', description: '', video_url: '', content_text: '', order_index: 1, is_free: false, reward_coins: 10
   });
@@ -96,9 +97,12 @@ export default function AdminPanel() {
   const fetchQuizzes = async () => {
     setIsLoading(true);
     // Use fallback or ignore error if table doesn't exist yet
-    let query = supabase.from('quizzes').select('*, courses(title)').order('order_index', { ascending: true });
+    let query = supabase.from('quizzes').select('*, courses(title), lessons(title)').order('order_index', { ascending: true });
     if (selectedCourseId) {
       query = query.eq('course_id', selectedCourseId);
+    }
+    if (selectedLessonIdForFilter) {
+      query = query.eq('lesson_id', selectedLessonIdForFilter);
     }
     const { data, error } = await query;
     if (error) {
@@ -138,7 +142,7 @@ export default function AdminPanel() {
       if (activeTab === 'quizzes') fetchQuizzes();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, isAuthenticated, selectedCourseId]);
+  }, [activeTab, isAuthenticated, selectedCourseId, selectedLessonIdForFilter]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -228,14 +232,19 @@ export default function AdminPanel() {
   const [showQuizForm, setShowQuizForm] = useState(false);
   const [editingQuizId, setEditingQuizId] = useState<string | null>(null);
   const [quizForm, setQuizForm] = useState({
-    course_id: '', question: '', options: '["A", "B"]', correct_option_index: 0, order_index: 1, reward_coins: 10
+    course_id: '', lesson_id: '', question: '', options: ['', '', '', ''], correct_option_index: 0, order_index: 1, reward_coins: 10
   });
 
   const openQuizForm = (quiz?: any) => {
     if (quiz) {
       setEditingQuizId(quiz.id);
+      let parsedOptions = ['', '', '', ''];
+      try {
+        const ops = quiz.options || [];
+        parsedOptions = [ops[0]||'', ops[1]||'', ops[2]||'', ops[3]||''];
+      } catch (e){}
       setQuizForm({
-        course_id: quiz.course_id, question: quiz.question, options: JSON.stringify(quiz.options || []),
+        course_id: quiz.course_id, lesson_id: quiz.lesson_id || '', question: quiz.question, options: parsedOptions,
         correct_option_index: quiz.correct_option_index, order_index: quiz.order_index, reward_coins: quiz.reward_coins || 10
       });
     } else {
@@ -243,7 +252,7 @@ export default function AdminPanel() {
       const cId = selectedCourseId || (courses[0]?.id || '');
       const existingQuizzes = quizzes.filter(q => q.course_id === cId);
       const maxOrder = existingQuizzes.length > 0 ? Math.max(...existingQuizzes.map(q => q.order_index)) : 0;
-      setQuizForm({ course_id: cId, question: '', options: '["A", "B"]', correct_option_index: 0, order_index: maxOrder + 1, reward_coins: 10 });
+      setQuizForm({ course_id: cId, lesson_id: selectedLessonIdForFilter || '', question: '', options: ['', '', '', ''], correct_option_index: 0, order_index: maxOrder + 1, reward_coins: 10 });
     }
     setShowQuizForm(true);
   };
@@ -251,7 +260,8 @@ export default function AdminPanel() {
   const saveQuiz = async () => {
     const payload = {
       ...quizForm,
-      options: JSON.parse(quizForm.options)
+      lesson_id: quizForm.lesson_id || null,
+      options: quizForm.options.filter(o => o.trim() !== '')
     };
     if (editingQuizId) {
       await supabase.from('quizzes').update(payload).eq('id', editingQuizId);
@@ -261,6 +271,66 @@ export default function AdminPanel() {
     setShowQuizForm(false);
     fetchQuizzes();
   };
+
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!selectedCourseId) {
+      alert("Iltimos, oldin fayl yuklanadigan Kursni tanlang (tepadagi filterdan).");
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const bstr = evt.target?.result;
+          const XLSX = await import('xlsx');
+          const wb = XLSX.read(bstr, { type: 'binary' });
+          const wsname = wb.SheetNames[0];
+          const data = XLSX.utils.sheet_to_json(wb.Sheets[wsname]) as any[];
+          
+          if (!data || data.length === 0) throw new Error("Fayl ichi bo'sh.");
+          
+          const payload = data.map((row: any, i: number) => {
+            const ops = [row['A']?.toString()||'', row['B']?.toString()||'', row['C']?.toString()||'', row['D']?.toString()||''].filter(Boolean);
+            let cIdx = 0;
+            const ans = row["To'g'ri_javob"]?.toString().toUpperCase();
+            if (ans === 'B') cIdx = 1;
+            if (ans === 'C') cIdx = 2;
+            if (ans === 'D') cIdx = 3;
+            
+            return {
+              course_id: selectedCourseId,
+              lesson_id: selectedLessonIdForFilter || null,
+              question: row['Savol'] || `Savol ${i+1}`,
+              options: ops,
+              correct_option_index: cIdx,
+              order_index: i + 1,
+              reward_coins: row['Ball'] ? Number(row['Ball']) : 10
+            };
+          });
+          
+          if (confirm(`Siz ${payload.length} ta savol yukladingiz. Ularni bazaga saqlaymizmi?`)) {
+            const { error } = await supabase.from('quizzes').insert(payload);
+            if (error) throw error;
+            alert("Muvaffaqiyatli saqlandi!");
+            fetchQuizzes();
+          }
+        } catch(err:any) {
+           alert("Xatolik: " + err.message);
+        } finally {
+           setIsLoading(false);
+           // reset target so same file can be uploaded again if needed
+           e.target.value = '';
+        }
+      };
+      reader.readAsBinaryString(file);
+    } catch(err) {
+      setIsLoading(false);
+    }
+  }
 
   const deleteQuiz = async (id: string) => {
     if (confirm('Ushbu testni (quiz) o\'chirmoqchimisiz?')) {
@@ -441,23 +511,40 @@ export default function AdminPanel() {
       {/* Quizzes Tab Content */}
       {activeTab === 'quizzes' && (
         <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
                <h2 className="text-xl font-bold dark:text-white">Testlar ({quizzes.length})</h2>
-               <select 
-                 value={selectedCourseId} 
-                 onChange={(e) => setSelectedCourseId(e.target.value)}
-                 className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white outline-none"
-               >
-                  <option value="">Barcha kurslar</option>
-                  {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-               </select>
+               <div className="flex gap-2 w-full sm:w-auto">
+                 <select 
+                   value={selectedCourseId} 
+                   onChange={(e) => setSelectedCourseId(e.target.value)}
+                   className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white outline-none w-full sm:w-auto font-medium"
+                 >
+                    <option value="">Barcha kurslar</option>
+                    {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                 </select>
+                 <select 
+                   value={selectedLessonIdForFilter} 
+                   onChange={(e) => setSelectedLessonIdForFilter(e.target.value)}
+                   className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white outline-none w-full sm:w-auto font-medium"
+                 >
+                    <option value="">Barcha darslar</option>
+                    {lessons.filter(l => !selectedCourseId || l.course_id === selectedCourseId).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+                 </select>
+               </div>
             </div>
             
-            <button onClick={() => openQuizForm()} className="flex items-center gap-2 bg-[#2D5A27] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#1f421a] transition-colors whitespace-nowrap">
-              <Plus className="w-4 h-4" />
-              Yangi test qo&apos;shish
-            </button>
+            <div className="flex gap-2 w-full md:w-auto justify-end">
+              <label className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors whitespace-nowrap cursor-pointer border border-blue-200 dark:border-blue-800 shadow-sm">
+                <FileSpreadsheet className="w-4 h-4" />
+                Excel (.xlsx)
+                <input type="file" accept=".xlsx, .xls, .csv" className="hidden" onChange={handleExcelUpload} disabled={isLoading} />
+              </label>
+              <button onClick={() => openQuizForm()} className="flex items-center gap-2 bg-[#2D5A27] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#1f421a] transition-colors whitespace-nowrap shadow-sm">
+                <Plus className="w-4 h-4" />
+                Yangi test
+              </button>
+            </div>
           </div>
           
           <div className="overflow-x-auto">
@@ -466,7 +553,7 @@ export default function AdminPanel() {
                 <tr>
                   <th className="px-4 py-3 rounded-tl-xl text-center w-16">Tartib</th>
                   <th className="px-4 py-3">Savol</th>
-                  <th className="px-4 py-3">Kurs</th>
+                  <th className="px-4 py-3">Kurs & Dars</th>
                   <th className="px-4 py-3">Tanga</th>
                   <th className="px-4 py-3 rounded-tr-xl text-right">Amallar</th>
                 </tr>
@@ -476,7 +563,10 @@ export default function AdminPanel() {
                   <tr key={quiz.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                     <td className="px-4 py-3 font-bold text-center text-gray-500">{quiz.order_index}</td>
                     <td className="px-4 py-3 font-medium dark:text-white truncate max-w-[300px]">{quiz.question}</td>
-                    <td className="px-4 py-3 text-gray-500">{(quiz as any).courses?.title || 'Noma\'lum'}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      <div className="font-bold text-[#2D5A27] dark:text-[#A8E6CF]">{(quiz as any).courses?.title || 'Noma\'lum kursi'}</div>
+                      <div className="text-gray-400 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]">{(quiz as any).lessons?.title || 'Umumiy kurs testi'}</div>
+                    </td>
                     <td className="px-4 py-3 text-yellow-500 font-bold">+{quiz.reward_coins}</td>
                     <td className="px-4 py-3 flex justify-end gap-2 text-right">
                       <button onClick={() => openQuizForm(quiz)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"><Edit2 className="w-4 h-4" /></button>
@@ -657,34 +747,67 @@ export default function AdminPanel() {
                  <button onClick={() => setShowQuizForm(false)} className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"><X className="w-5 h-5"/></button>
               </div>
               <div className="p-6 overflow-y-auto space-y-4">
-                 <div>
-                   <label className="block text-sm font-medium mb-1 dark:text-gray-300">Tegishli Kurs</label>
-                   <select value={quizForm.course_id} onChange={e => setQuizForm({...quizForm, course_id: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]">
-                     <option value="" disabled>Kursni tanlang...</option>
-                     {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                   </select>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div>
+                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">Tegishli Kurs</label>
+                     <select value={quizForm.course_id} onChange={e => setQuizForm({...quizForm, course_id: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]">
+                       <option value="" disabled>Kursni tanlang...</option>
+                       {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                     </select>
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">Tegishli Dars (ixtiyoriy)</label>
+                     <select value={quizForm.lesson_id} onChange={e => setQuizForm({...quizForm, lesson_id: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]">
+                       <option value="">Umumiy kurs testi</option>
+                       {lessons.filter(l => !quizForm.course_id || l.course_id === quizForm.course_id).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+                     </select>
+                   </div>
                  </div>
                  <div>
                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Savol matni</label>
-                   <textarea rows={2} value={quizForm.question} onChange={e => setQuizForm({...quizForm, question: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                   <textarea rows={2} value={quizForm.question} onChange={e => setQuizForm({...quizForm, question: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF] resize-none" placeholder="Masalan: JavaScriptda o'zgaruvchilar qanday e'lon qilinadi?" />
                  </div>
+                 
                  <div>
-                   <label className="block text-sm font-medium mb-1 dark:text-gray-300">Variantlar (JSON formatida Array)</label>
-                   <textarea rows={2} value={quizForm.options} onChange={e => setQuizForm({...quizForm, options: e.target.value})} placeholder='["Variant A", "Variant B", "Variant C"]' className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF] font-mono text-xs" />
-                 </div>
-                 <div className="grid grid-cols-2 gap-4">
-                   <div>
-                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">To'g'ri variant indeksi (0 dan boshlanadi)</label>
-                     <input type="number" value={quizForm.correct_option_index} onChange={e => setQuizForm({...quizForm, correct_option_index: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                   <label className="block text-sm font-medium mb-2 dark:text-gray-300">Variantlar (To'g'ri javobni belgilang)</label>
+                   <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
+                     {['A', 'B', 'C', 'D'].map((letter, idx) => (
+                       <div key={idx} className={`flex items-center gap-3 p-2 rounded-lg border ${quizForm.correct_option_index === idx ? 'border-[#2D5A27] bg-[#2D5A27]/5' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'} transition-all`}>
+                         <label className="flex items-center cursor-pointer p-1">
+                           <input 
+                             type="radio" 
+                             name="correctAnswer" 
+                             checked={quizForm.correct_option_index === idx}
+                             onChange={() => setQuizForm({...quizForm, correct_option_index: idx})}
+                             className="w-5 h-5 text-[#2D5A27] focus:ring-[#2D5A27] cursor-pointer"
+                           />
+                           <span className="font-bold text-gray-500 w-6 ml-2 text-center select-none">{letter})</span>
+                         </label>
+                         <input 
+                           type="text" 
+                           value={quizForm.options[idx] || ''}
+                           onChange={e => {
+                             const newOps = [...quizForm.options];
+                             newOps[idx] = e.target.value;
+                             setQuizForm({...quizForm, options: newOps});
+                           }}
+                           placeholder={`${letter} variantini kiriting...`} 
+                           className="flex-1 p-2 bg-transparent outline-none dark:text-white text-sm border-l border-gray-200 dark:border-gray-700 pl-3" 
+                         />
+                       </div>
+                     ))}
                    </div>
+                 </div>
+                 
+                 <div className="grid grid-cols-2 gap-4">
                    <div>
                      <label className="block text-sm font-medium mb-1 dark:text-gray-300">Tartib Raqami</label>
                      <input type="number" value={quizForm.order_index} onChange={e => setQuizForm({...quizForm, order_index: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
                    </div>
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium mb-1 dark:text-gray-300">Sovrin (tanga)</label>
-                   <input type="number" value={quizForm.reward_coins} onChange={e => setQuizForm({...quizForm, reward_coins: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                   <div>
+                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">Sovrin (tanga)</label>
+                     <input type="number" value={quizForm.reward_coins} onChange={e => setQuizForm({...quizForm, reward_coins: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                   </div>
                  </div>
               </div>
               <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/30">

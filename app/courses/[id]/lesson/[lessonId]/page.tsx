@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, ArrowRight, Clock, PlayCircle, CheckCircle, BookOpen, Award, Loader2, PartyPopper } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, PlayCircle, CheckCircle, BookOpen, Award, Loader2, PartyPopper, HelpCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
 interface Lesson {
@@ -50,6 +50,12 @@ export default function LessonPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [completionResult, setCompletionResult] = useState<any>(null);
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
+  
+  // Test State
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [testMode, setTestMode] = useState(false);
+  const [testAnswers, setTestAnswers] = useState<{[key: string]: number}>({});
+  const [testResult, setTestResult] = useState<'passed'|'failed'|null>(null);
 
   useEffect(() => {
     if (!courseId || !lessonId) return;
@@ -61,16 +67,18 @@ export default function LessonPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
 
-        const [courseRes, lessonRes, allLessonsRes] = await Promise.all([
+        const [courseRes, lessonRes, allLessonsRes, quizzesRes] = await Promise.all([
           supabase.from('courses').select('id, title').eq('id', courseId).single(),
           supabase.from('lessons').select('*').eq('id', lessonId).single(),
           supabase.from('lessons').select('*').eq('course_id', courseId).order('order_index', { ascending: true }),
+          supabase.from('quizzes').select('*').eq('lesson_id', lessonId).order('order_index', { ascending: true }),
         ]);
 
         if (isMounted) {
           setCourse(courseRes.data);
           setLesson(lessonRes.data);
           setAllLessons(allLessonsRes.data || []);
+          setQuizzes((quizzesRes.data as any) || []);
         }
 
         // Check existing progress
@@ -98,6 +106,31 @@ export default function LessonPage() {
     fetchData();
     return () => { isMounted = false; };
   }, [courseId, lessonId]);
+
+  const handleInitiateCompletion = () => {
+    if (quizzes.length > 0 && !isCompleted) {
+      setTestMode(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      handleCompleteLesson();
+    }
+  };
+
+  const handleSubmitTest = () => {
+    let correct = 0;
+    quizzes.forEach(q => {
+       if (testAnswers[q.id] === q.correct_option_index) correct++;
+    });
+    
+    // Optimal yakunlash - 100% topish talab qilinadi
+    if (correct === quizzes.length) {
+       setTestResult('passed');
+       handleCompleteLesson();
+    } else {
+       setTestResult('failed');
+       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const handleCompleteLesson = async () => {
     setIsCompleting(true);
@@ -168,11 +201,78 @@ export default function LessonPage() {
       {/* Main Content */}
       <div className="flex-1 p-4 sm:p-8 pb-24 max-w-5xl mx-auto w-full">
         
-        {/* Video Player Area — Protected */}
-        <div 
-          className="bg-gray-900 rounded-3xl overflow-hidden shadow-lg mb-6 aspect-video relative select-none"
-          onContextMenu={(e) => e.preventDefault()}
-        >
+        {/* Testing State UI */}
+        {testMode && !isCompleted ? (
+          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800 mb-6 animate-in fade-in duration-500">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+              <HelpCircle className="w-8 h-8 text-[#2D5A27] dark:text-[#A8E6CF]" />
+              Darsni o'zlashtirish testi
+            </h2>
+            
+            {testResult === 'failed' && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6 mb-8 text-center animate-in zoom-in duration-300">
+                <XCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+                <h3 className="text-xl font-bold text-red-700 dark:text-red-400 mb-2">Afsuski, to'liq o'zlashtirilmadi</h3>
+                <p className="text-red-600/80 dark:text-red-300/80 mb-6 font-medium">Darsni muvaffaqiyatli yakunlash va tangalarni yig'ish uchun barcha savollarga to'g'ri javob berishingiz kerak. Yana bir bor urinib ko'ring yoki videoni qayta ko'ring.</p>
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
+                  <button onClick={() => { setTestMode(false); setTestResult(null); setTestAnswers({}); }} className="px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                    Videoni qayta ko'rish
+                  </button>
+                  <button onClick={() => { setTestResult(null); setTestAnswers({}); }} className="px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-500/30">
+                    Qayta urinish
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {testResult !== 'failed' && (
+              <div className="space-y-8">
+                {quizzes.map((q, idx) => (
+                  <div key={q.id} className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-colors duration-300">
+                    <p className="font-bold text-gray-900 dark:text-white mb-5 text-lg">
+                      {idx + 1}. {q.question}
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {(q.options as string[]).map((opt, oIdx) => (
+                        <label 
+                          key={oIdx} 
+                          className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all border-2 ${
+                            testAnswers[q.id] === oIdx 
+                              ? 'border-[#2D5A27] bg-[#2D5A27]/5 dark:border-[#A8E6CF] dark:bg-[#A8E6CF]/10 shadow-sm' 
+                              : 'border-transparent bg-white dark:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-700 shadow-sm'
+                          }`}
+                        >
+                          <input 
+                            type="radio" 
+                            name={`quiz_${q.id}`} 
+                            checked={testAnswers[q.id] === oIdx}
+                            onChange={() => setTestAnswers(prev => ({...prev, [q.id]: oIdx}))}
+                            className="w-5 h-5 text-[#2D5A27] dark:text-[#A8E6CF] focus:ring-[#2D5A27] dark:focus:ring-[#A8E6CF]"
+                          />
+                          <span className="text-gray-700 dark:text-gray-300 font-medium">{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                <button 
+                  onClick={handleSubmitTest}
+                  disabled={Object.keys(testAnswers).length !== quizzes.length}
+                  className="w-full py-4 bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] shadow-lg shadow-green-500/20 text-white rounded-xl font-bold text-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Javoblarni tekshirib yuborish
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="animate-in fade-in duration-500">
+            {/* Video Player Area — Protected */}
+            <div 
+              className="bg-gray-900 rounded-3xl overflow-hidden shadow-lg mb-6 aspect-video relative select-none"
+              onContextMenu={(e) => e.preventDefault()}
+            >
           {embedUrl ? (
             <iframe
               src={embedUrl}
@@ -210,48 +310,52 @@ export default function LessonPage() {
         </div>
 
         {/* Completion Button */}
-        <div className="mb-6">
-          {completionResult?.course_completed ? (
-            <div className="bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] rounded-3xl p-6 text-white text-center shadow-lg">
-              <PartyPopper className="w-12 h-12 mx-auto mb-3 text-yellow-300" />
-              <h3 className="text-xl font-bold mb-2">🎉 Tabriklaymiz!</h3>
-              <p className="text-sm text-white/80 mb-1">Siz kursni to&apos;liq tugatdingiz!</p>
-              <p className="text-sm font-bold text-yellow-300">+{completionResult.bonus_coins} bonus tanga qo&apos;lga kiritildi</p>
-              <p className="text-xs text-white/60 mt-2">Sertifikat avtomatik yaratildi — Profilga o&apos;ting</p>
-              <Link href="/profile" className="inline-block mt-4 px-6 py-2.5 bg-white text-[#2D5A27] rounded-xl font-bold text-sm hover:bg-gray-100 transition-colors">
-                <Award className="w-4 h-4 inline mr-1" /> Sertifikatni ko&apos;rish
-              </Link>
-            </div>
-          ) : isCompleted ? (
-            <div className="bg-[#A8E6CF]/20 dark:bg-[#A8E6CF]/10 border-2 border-[#2D5A27]/20 dark:border-[#A8E6CF]/20 rounded-2xl p-5 flex items-center gap-4">
-              <CheckCircle className="w-8 h-8 text-[#2D5A27] dark:text-[#A8E6CF] shrink-0" />
-              <div>
-                <p className="font-bold text-[#2D5A27] dark:text-[#A8E6CF]">Dars tugallangan ✅</p>
-                {completionResult?.coins_earned > 0 && (
-                  <p className="text-xs text-[#2D5A27]/70 dark:text-[#A8E6CF]/70 mt-0.5">+{completionResult.coins_earned} tanga qo&apos;lga kiritildi</p>
-                )}
+        {!testMode && (
+          <div className="mb-6">
+            {completionResult?.course_completed ? (
+              <div className="bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] rounded-3xl p-6 text-white text-center shadow-lg">
+                <PartyPopper className="w-12 h-12 mx-auto mb-3 text-yellow-300" />
+                <h3 className="text-xl font-bold mb-2">🎉 Tabriklaymiz!</h3>
+                <p className="text-sm text-white/80 mb-1">Siz kursni to&apos;liq tugatdingiz!</p>
+                <p className="text-sm font-bold text-yellow-300">+{completionResult.bonus_coins} bonus tanga qo&apos;lga kiritildi</p>
+                <p className="text-xs text-white/60 mt-2">Sertifikat avtomatik yaratildi — Profilga o&apos;ting</p>
+                <Link href="/profile" className="inline-block mt-4 px-6 py-2.5 bg-white text-[#2D5A27] rounded-xl font-bold text-sm hover:bg-gray-100 transition-colors">
+                  <Award className="w-4 h-4 inline mr-1" /> Sertifikatni ko&apos;rish
+                </Link>
               </div>
-            </div>
-          ) : (
-            <button
-              onClick={handleCompleteLesson}
-              disabled={isCompleting}
-              className="w-full py-4 bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] text-white rounded-2xl font-bold text-base shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isCompleting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Saqlanmoqda...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-5 h-5" />
-                  Darsni tugatdim — +10 tanga
-                </>
-              )}
-            </button>
-          )}
-        </div>
+            ) : isCompleted ? (
+              <div className="bg-[#A8E6CF]/20 dark:bg-[#A8E6CF]/10 border-2 border-[#2D5A27]/20 dark:border-[#A8E6CF]/20 rounded-2xl p-5 flex items-center gap-4">
+                <CheckCircle className="w-8 h-8 text-[#2D5A27] dark:text-[#A8E6CF] shrink-0" />
+                <div>
+                  <p className="font-bold text-[#2D5A27] dark:text-[#A8E6CF]">Dars tugallangan ✅</p>
+                  {completionResult?.coins_earned > 0 && (
+                    <p className="text-xs text-[#2D5A27]/70 dark:text-[#A8E6CF]/70 mt-0.5">+{completionResult.coins_earned} tanga qo&apos;lga kiritildi</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleInitiateCompletion}
+                disabled={isCompleting}
+                className="w-full py-4 bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] text-white rounded-2xl font-bold text-base shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isCompleting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Saqlanmoqda...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-5 h-5" />
+                    {quizzes.length > 0 ? "Darsni tugatdim va testni boshlash" : "Darsni tugatdim"} — +{lesson.reward_coins} tanga
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
+          </div>
+        )}
 
         {/* Navigation Buttons */}
         <div className="flex gap-4">
