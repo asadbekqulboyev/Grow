@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Settings, BookOpen, Users, Video, LogOut, Plus, Edit2, Trash2, X, HelpCircle, Youtube, Eye, Coins, Upload, Loader2, FileSpreadsheet, AlertTriangle } from 'lucide-react';
+import { Settings, BookOpen, Users, Video, LogOut, Plus, Edit2, Trash2, X, HelpCircle, Youtube, Eye, Coins, Upload, Loader2, FileSpreadsheet, AlertTriangle, Award } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Toaster, toast } from 'react-hot-toast';
@@ -31,6 +31,7 @@ export default function AdminPanel() {
   const [lessons, setLessons] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
   const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, title: string, onConfirm: () => void} | null>(null);
   const supabase = createClient();
 
@@ -116,6 +117,19 @@ export default function AdminPanel() {
     setIsLoading(false);
   };
 
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase.rpc('get_all_users_stats');
+    if (error) {
+       console.error("Raw RPC error:", error);
+       console.error("RPC Error Message:", error.message);
+       console.error("RPC Error Details:", error.details);
+    } else {
+       setUsers(data || []);
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       setIsCheckingAuth(true);
@@ -145,6 +159,7 @@ export default function AdminPanel() {
         fetchQuizzes();
         fetchLessons();
       }
+      if (activeTab === 'users') fetchUsers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, isAuthenticated, selectedCourseId, selectedLessonIdForFilter]);
@@ -629,14 +644,72 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* Users Tab Content (Placeholder) */}
+      {/* Users Tab Content */}
       {activeTab === 'users' && (
-        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6 flex flex-col items-center justify-center text-center py-20">
-           <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
-              <Users className="w-8 h-8 text-blue-500" />
-           </div>
-           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Foydalanuvchilar modulli tayyorlanmoqda</h3>
-           <p className="text-gray-500 max-w-md">Tez kunda bu yerda ro&apos;yxatdan o&apos;tgan barcha o&apos;quvchilarni ko&apos;rish, blokka tushirish va ularni natijalarini boshqarish imkoniyati qo&apos;shiladi.</p>
+        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold dark:text-white flex items-center gap-3">
+              Foydalanuvchilar statistikasi
+              <span className="text-sm px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">{users.length} ta o'quvchi</span>
+            </h2>
+            <button onClick={fetchUsers} className="p-2 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-500 hover:text-gray-800 dark:hover:text-white rounded-xl transition-colors">
+              <Loader2 className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium">
+                <tr>
+                  <th className="px-4 py-4 rounded-tl-xl">F.I.SH & Email</th>
+                  <th className="px-4 py-4 text-center">Tugatgan darslar</th>
+                  <th className="px-4 py-4 text-center">Sertifikatlar</th>
+                  <th className="px-4 py-4 text-center rounded-tr-xl">Jamg'argan tangalari</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {users.length === 0 && !isLoading && (
+                   <tr>
+                     <td colSpan={5} className="py-10 text-center text-gray-500">Hech qanday ma'lumot topilmadi</td>
+                   </tr>
+                )}
+                {users.map(user => (
+                  <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2D5A27] to-[#4a8c42] flex flex-col items-center justify-center text-white shrink-0 shadow-sm border-2 border-white dark:border-gray-800">
+                          <span className="font-bold text-sm uppercase">{user.full_name ? user.full_name.charAt(0) : user.email?.charAt(0) || 'U'}</span>
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900 dark:text-white">{user.full_name || 'Ismi kiritilmagan'}</div>
+                          <div className="text-gray-500 text-xs mt-0.5">{user.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold border border-blue-100 dark:border-blue-800">
+                         {user.completed_lessons}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      {user.total_certificates > 0 ? (
+                        <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 font-bold border border-green-100 dark:border-green-800">
+                           <Award className="w-4 h-4" /> {user.total_certificates}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 font-medium">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                       <span className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 font-bold shadow-sm whitespace-nowrap">
+                          <Coins className="w-4 h-4" /> {user.total_coins}
+                       </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
