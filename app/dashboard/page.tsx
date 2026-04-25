@@ -62,7 +62,7 @@ export default async function Page() {
   return (
     <div className="flex-1 flex flex-col min-h-screen">
       {/* Top Header */}
-      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-[15px] sm:px-8 z-10 sticky top-0 transition-colors duration-300 gap-2">
+      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-[15px] sm:px-8 z-40 sticky top-0 transition-colors duration-300 gap-2">
         <div className="flex items-center">
           <Link href="/dashboard" className="sm:hidden flex items-center">
             <img src="/images/logo.svg" alt="Grow.uz" className="h-8 object-contain dark:invert" />
@@ -95,7 +95,7 @@ export default async function Page() {
         
         {/* Left Column: Growth Tree */}
         <div className="md:col-span-12 lg:col-span-7">
-          <div className="bg-white dark:bg-gray-800 rounded-[32px] p-5 sm:p-8 h-[380px] sm:h-[480px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center relative transition-colors duration-300">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-[32px] p-5 sm:p-8 h-[380px] sm:h-[480px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center relative transition-colors duration-300">
             <div className="absolute top-6 left-6 sm:left-8 w-full">
               <h3 className="text-lg font-bold text-[#2D5A27] dark:text-[#A8E6CF] transition-colors">Sizning daraxtingiz</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors">Level {treeLevel}: {treeLevelName}</p>
@@ -130,18 +130,18 @@ export default async function Page() {
         {/* Right Column: Stats & Certificates */}
         <div className="md:col-span-12 lg:col-span-5 flex flex-col gap-6">
           <div className="grid grid-cols-2 gap-4">
-             <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-[24px] rounded-bl-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+             <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl sm:rounded-[24px] rounded-bl-[1.5rem] sm:rounded-bl-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
                <p className="text-gray-400 dark:text-gray-500 text-xs font-bold uppercase mb-1 transition-colors">Faol kunlar</p>
                <p className="text-xl sm:text-2xl font-bold text-[#2D5A27] dark:text-[#A8E6CF] transition-colors">{uniqueDays} Kun</p>
              </div>
-             <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-[24px] rounded-br-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
+             <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl sm:rounded-[24px] rounded-br-[1.5rem] sm:rounded-br-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
                <p className="text-gray-400 dark:text-gray-500 text-xs font-bold uppercase mb-1 transition-colors">Kurslar</p>
                <p className="text-xl sm:text-2xl font-bold text-[#2D5A27] dark:text-[#A8E6CF] transition-colors">{completedCourseIds.length} <span className="hidden sm:inline">yakunlandi</span><span className="sm:hidden">ta</span></p>
              </div>
           </div>
           
           {/* Recent Certificate Preview */}
-          <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-[280px] sm:h-[328px] transition-colors duration-300 z-0">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-[280px] sm:h-[328px] transition-colors duration-300 z-0">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-gray-900 dark:text-white transition-colors">Oxirgi Sertifikat</h3>
               <Link href="/profile" className="text-xs font-semibold text-[#2D5A27] dark:text-[#A8E6CF] underline transition-colors">Barchasi</Link>
@@ -175,7 +175,7 @@ export default async function Page() {
       </div>
       
       {/* Active Course Bar */}
-      <div className="mx-4 sm:mx-8 mt-auto mb-28 sm:mb-8 bg-[#A8E6CF] dark:bg-[#2D5A27] rounded-[24px] p-4 flex gap-4 items-center justify-between shadow-sm transition-colors duration-300 relative z-10">
+      <div className="mx-4 sm:mx-8 mt-auto mb-28 sm:mb-8 bg-[#A8E6CF] dark:bg-[#2D5A27] rounded-2xl sm:rounded-[24px] p-4 flex gap-4 items-center justify-between shadow-sm transition-colors duration-300 relative z-10">
           <div className="flex items-center gap-3 sm:gap-4 flex-1">
               <Link href="/courses" className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center font-bold text-[#2D5A27] dark:text-[#A8E6CF] shadow-sm tracking-tighter transition-colors">▶</Link>
               <div className="flex-1 min-w-0">

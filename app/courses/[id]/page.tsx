@@ -108,7 +108,7 @@ export default function CourseDetailsPage() {
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-gray-50 dark:bg-[#111827] transition-colors duration-300">
       {/* Dynamic Header Banner */}
-      <div className="relative w-full h-[350px] md:h-[400px] overflow-hidden bg-gray-900 group">
+      <div className="relative w-full h-[280px] md:h-[400px] overflow-hidden bg-gray-900 group">
         {course.image_url ? (
           <Image 
             src={course.image_url} 
@@ -124,43 +124,43 @@ export default function CourseDetailsPage() {
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-gray-50 dark:from-[#111827] to-transparent z-10"></div>
         <div className="absolute inset-0 bg-black/40 z-0"></div>
 
-        <div className="absolute inset-0 z-20 flex flex-col p-8 max-w-5xl mx-auto w-full">
+        <div className="absolute inset-0 z-20 flex flex-col p-4 md:p-8 max-w-5xl mx-auto w-full">
           <button 
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-colors mb-6 border border-white/20"
+            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-colors mb-4 md:mb-6 border border-white/20"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           
-          <div className="mt-auto pb-10">
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
-              <span className="bg-[#A8E6CF] text-[#111827] text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
+          <div className="mt-auto pb-6 md:pb-10">
+            <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4 flex-wrap">
+              <span className="bg-[#A8E6CF] text-[#111827] text-[10px] md:text-xs font-bold px-2.5 py-1 md:px-3 md:py-1.5 rounded-full uppercase tracking-wider">
                 {course.category}
               </span>
-              <span className="bg-white/20 text-white backdrop-blur-md text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
+              <span className="bg-white/20 text-white backdrop-blur-md text-[10px] md:text-xs font-medium px-2.5 py-1 md:px-3 md:py-1.5 rounded-full flex items-center gap-1">
                 <BookOpen className="w-3.5 h-3.5" />
                 {course.level}
               </span>
-              <span className="bg-yellow-500/20 text-yellow-300 backdrop-blur-md border border-yellow-500/30 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
+              <span className="bg-yellow-500/20 text-yellow-300 backdrop-blur-md border border-yellow-500/30 text-[10px] md:text-xs font-bold px-2.5 py-1 md:px-3 md:py-1.5 rounded-full flex items-center gap-1">
                 <Coins className="w-3.5 h-3.5" />
                 +{course.reward_coins} tanga
               </span>
             </div>
             
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 mb-8 self-center md:self-start w-fit">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm">
+            <div className="flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-md px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-white/10 mb-4 md:mb-8 self-start w-fit">
+              <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xs md:text-sm">
                 {(course.author?.[0] || 'A').toUpperCase()}
               </div>
-              <div>
-                <p className="text-xs text-white/60 font-medium">Ustoz / Muallif</p>
-                <p className="text-sm text-white font-bold">{course.author || 'Asadbek'}</p>
+              <div className="flex items-center gap-1.5 md:block">
+                <p className="text-[10px] md:text-xs text-white/60 font-medium md:mb-0.5">Ustoz:</p>
+                <p className="text-xs md:text-sm text-white font-bold">{course.author || 'Asadbek'}</p>
               </div>
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-4 leading-tight">
+            <h1 className="text-2xl md:text-5xl font-extrabold text-white mb-2 md:mb-4 leading-tight">
               {course.title}
             </h1>
-            <p className="text-gray-200 text-sm md:text-base max-w-2xl line-clamp-3 md:line-clamp-none opacity-90 drop-shadow-md">
+            <p className="text-gray-200 text-xs md:text-base max-w-2xl line-clamp-2 md:line-clamp-none opacity-90 drop-shadow-md">
               {course.description}
             </p>
           </div>
@@ -168,14 +168,14 @@ export default function CourseDetailsPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-5xl mx-auto w-full px-6 lg:px-8 -mt-6 z-30 pb-24 flex flex-col lg:flex-row gap-8">
+      <div className="max-w-5xl mx-auto w-full px-4 lg:px-8 -mt-6 md:-mt-8 z-30 pb-24 flex flex-col lg:flex-row gap-6 md:gap-8">
         
         {/* Left Column: Lessons */}
         <div className="flex-1 w-full">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800">
+            <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 flex items-center justify-between md:justify-start">
               Darslar ro&apos;yxati
-              <span className="ml-3 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 py-1 px-3 rounded-full">
+              <span className="md:ml-3 text-xs md:text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 py-1.5 px-3 rounded-full">
                 {lessons.length} ta dars
               </span>
             </h2>
@@ -189,30 +189,30 @@ export default function CourseDetailsPage() {
                 <p className="text-gray-500 dark:text-gray-500 max-w-sm mx-auto">Tez orada ushbu kursga yangi videodarslar joylanadi. Bizni kuzatib boring!</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3 md:gap-4">
                 {lessons.map((lesson, index) => (
                   <Link 
                     key={lesson.id} 
                     href={`/courses/${courseId}/lesson/${lesson.id}`}
-                    className="group flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 hover:border-[#2D5A27]/30 dark:hover:border-[#A8E6CF]/30 transition-all hover:shadow-sm"
+                    className="group flex flex-row items-center justify-between gap-3 p-3 md:p-4 rounded-xl md:rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 hover:border-[#2D5A27]/30 dark:hover:border-[#A8E6CF]/30 transition-all hover:shadow-sm"
                   >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${index === 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700'}`}>
-                        {index === 0 ? <PlayCircle className="w-5 h-5 fill-current" /> : <Lock className="w-4 h-4" />}
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0 ${index === 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700'}`}>
+                        {index === 0 ? <PlayCircle className="w-4 h-4 md:w-5 md:h-5 fill-current" /> : <Lock className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                       </div>
                       
-                      <div>
-                        <h4 className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#2D5A27] dark:group-hover:text-[#A8E6CF] transition-colors line-clamp-1">
+                      <div className="overflow-hidden">
+                        <h4 className="text-sm md:text-base font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#2D5A27] dark:group-hover:text-[#A8E6CF] transition-colors truncate">
                           {lesson.order_index}. {lesson.title}
                         </h4>
                         {lesson.description && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{lesson.description}</p>
+                          <p className="text-[10px] md:text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">{lesson.description}</p>
                         )}
                       </div>
                     </div>
                     
-                    <div className="flex items-center text-xs font-semibold text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 w-fit self-end sm:self-auto shrink-0 group-hover:border-gray-300 dark:group-hover:border-gray-600 transition-colors">
-                      <Clock className="w-3.5 h-3.5 mr-1.5" />
+                    <div className="flex items-center text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-2.5 py-1.5 md:px-3 rounded-lg border border-gray-200 dark:border-gray-700 shrink-0 group-hover:border-gray-300 dark:group-hover:border-gray-600 transition-colors whitespace-nowrap">
+                      <Clock className="w-3 h-3 md:w-3.5 md:h-3.5 mr-1 md:mr-1.5" />
                       {lesson.duration_minutes} daq
                     </div>
                   </Link>

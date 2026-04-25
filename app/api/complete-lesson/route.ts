@@ -31,16 +31,16 @@ export async function POST(request: Request) {
     // Mark lesson as completed
     const { error: progressError } = await supabase
       .from('user_progress')
-      .insert({
+      .upsert({
         user_id: user.id,
-        course_id,
         lesson_id,
         completed: true,
         completed_at: new Date().toISOString(),
-      });
+      }, { onConflict: 'user_id,lesson_id' });
 
     if (progressError) {
-      return NextResponse.json({ error: progressError.message }, { status: 500 });
+      console.error("Progress Error:", progressError);
+      return NextResponse.json({ error: 'Progress save error: ' + progressError.message, details: progressError }, { status: 500 });
     }
 
     // Calculate total quiz coins for this lesson
@@ -54,16 +54,30 @@ export async function POST(request: Request) {
       totalQuizCoins = lessonQuizzes.reduce((sum, q) => sum + (q.reward_coins || 10), 0);
     }
 
+    // Get specific lesson coins safely
+    const { data: lessonData, error: lError } = await supabase
+      .from('lessons')
+      .select('reward_coins')
+      .eq('id', lesson_id)
+      .maybeSingle();
+
+    if (lError) console.error("Could not fetch lesson coins, falling back heavily", lError);
+
     // Award overall coins (Lesson itself + all the quizzes in it)
-    const LESSON_COINS = 10;
+    const LESSON_COINS = lessonData?.reward_coins || 10;
     const totalReward = LESSON_COINS + totalQuizCoins;
     
-    await supabase.from('user_coins').insert({
+    const { error: coinsError } = await supabase.from('user_coins').insert({
       user_id: user.id,
       amount: totalReward,
       reason: totalQuizCoins > 0 ? `Dars va sinov testi a'lo darajada yakunlandi` : `Dars tugallandi`,
       course_id,
     });
+
+    if (coinsError) {
+       console.error("Coins Error:", coinsError);
+       return NextResponse.json({ error: 'Coins error: ' + coinsError.message, details: coinsError }, { status: 500 });
+    }
 
     // Check if ALL lessons in the course are completed
     const { data: allLessons } = await supabase
@@ -71,11 +85,13 @@ export async function POST(request: Request) {
       .select('id')
       .eq('course_id', course_id);
 
+    const allLessonIds = allLessons?.map(l => l.id) || [];
+
     const { data: completedLessons } = await supabase
       .from('user_progress')
       .select('lesson_id')
       .eq('user_id', user.id)
-      .eq('course_id', course_id)
+      .in('lesson_id', allLessonIds)
       .eq('completed', true);
 
     const totalLessons = allLessons?.length || 0;

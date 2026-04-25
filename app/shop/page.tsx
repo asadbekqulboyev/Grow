@@ -14,7 +14,7 @@ export default function ShopPage() {
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#F3F4F6] dark:bg-[#111827] transition-colors duration-300">
       {/* Header */}
-      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-8 z-10 sticky top-0 transition-colors duration-300">
+      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-[15px] sm:px-8 z-40 sticky top-0 transition-colors duration-300">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#A8E6CF] to-[#2D5A27] flex items-center justify-center shadow-sm">
             <ShoppingBag className="w-5 h-5 text-white" />
@@ -32,9 +32,9 @@ export default function ShopPage() {
       </header>
 
       {/* Main Content */}
-      <div className="p-8 pb-24 max-w-7xl mx-auto w-full">
+      <div className="px-[15px] sm:px-8 py-6 sm:py-8 pb-24 max-w-7xl mx-auto w-full">
         {/* Coming Soon Banner */}
-        <div className="bg-gradient-to-br from-[#2D5A27] to-[#1a3816] rounded-3xl p-8 md:p-12 mb-8 text-white relative overflow-hidden">
+        <div className="bg-gradient-to-br from-[#2D5A27] to-[#1a3816] rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 mb-6 sm:mb-8 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#A8E6CF]/20 rounded-full mix-blend-overlay filter blur-[80px] animate-float-slow pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-yellow-300/10 rounded-full mix-blend-overlay filter blur-[60px] animate-float-medium pointer-events-none"></div>
           
@@ -43,8 +43,8 @@ export default function ShopPage() {
               <Sparkles className="w-3.5 h-3.5" />
               Tez kunda
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3">Tangalaringizni sarflang!</h1>
-            <p className="text-[#A8E6CF] max-w-lg text-sm md:text-base">
+            <h1 className="text-xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-3">Tangalaringizni sarflang!</h1>
+            <p className="text-[#A8E6CF] max-w-lg text-xs sm:text-sm md:text-base">
               Kurslarni tugatib to&apos;plagan tangalaringiz bilan maxsus badgelar, premium funksiyalar va boshqa sovg&apos;alarni sotib oling.
             </p>
           </div>
@@ -55,7 +55,7 @@ export default function ShopPage() {
           {shopItems.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.id} className="bg-white dark:bg-gray-900 rounded-[28px] overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col group hover:shadow-xl transition-all duration-300 relative">
+              <div key={item.id} className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-[28px] overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col group hover:shadow-xl transition-all duration-300 relative">
                 {/* Locked overlay */}
                 <div className="absolute inset-0 bg-white/60 dark:bg-gray-900/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center rounded-[28px] opacity-0 group-hover:opacity-100 transition-opacity">
                   <Lock className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
@@ -77,7 +77,7 @@ export default function ShopPage() {
                       <span className="text-[10px] bg-yellow-400 w-4 h-4 rounded-full flex items-center justify-center font-bold text-white">💰</span>
                       <span className="font-bold text-sm text-[#2D5A27] dark:text-[#A8E6CF]">{item.price}</span>
                     </div>
-                    <button disabled className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-xl text-xs font-bold cursor-not-allowed">
+                    <button disabled className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg sm:rounded-xl text-xs font-bold cursor-not-allowed">
                       Sotib olish
                     </button>
                   </div>

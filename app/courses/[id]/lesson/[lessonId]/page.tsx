@@ -48,6 +48,7 @@ export default function LessonPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [completionResult, setCompletionResult] = useState<any>(null);
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
   
@@ -88,7 +89,6 @@ export default function LessonPage() {
             .from('user_progress')
             .select('lesson_id')
             .eq('user_id', user.id)
-            .eq('course_id', courseId)
             .eq('completed', true);
 
           if (isMounted && progressData) {
@@ -120,7 +120,7 @@ export default function LessonPage() {
   const handleSubmitTest = () => {
     let correct = 0;
     quizzes.forEach(q => {
-       if (testAnswers[q.id] === q.correct_option_index) correct++;
+       if (testAnswers[q.id] === Number(q.correct_option_index)) correct++;
     });
     
     // Optimal yakunlash - 100% topish talab qilinadi
@@ -143,10 +143,28 @@ export default function LessonPage() {
       });
       const data = await res.json();
       
+      if (!res.ok || data.error) {
+        alert("Xatolik: " + (data.error || "Noma'lum xato"));
+        setIsCompleting(false);
+        return;
+      }
+      
       if (data.success || data.already_completed) {
         setIsCompleted(true);
         setCompletedLessonIds(prev => new Set(prev).add(lessonId));
         setCompletionResult(data);
+        setTestMode(false);
+        
+        if (!data.course_completed) {
+           const idx = allLessons.findIndex(l => l.id === lessonId);
+           if (idx !== -1 && idx < allLessons.length - 1) {
+              const nxt = allLessons[idx + 1];
+              setIsRedirecting(true);
+              setTimeout(() => {
+                 router.push(`/courses/${courseId}/lesson/${nxt.id}`);
+              }, 1500);
+           }
+        }
       }
     } catch (err) {
       console.error('Xatolik:', err);
@@ -182,7 +200,7 @@ export default function LessonPage() {
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#F3F4F6] dark:bg-[#111827] transition-colors duration-300">
       {/* Header */}
-      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-[15px] sm:px-8 z-10 sticky top-0 transition-colors duration-300">
+      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-[15px] sm:px-8 z-40 sticky top-0 transition-colors duration-300">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push(`/courses/${courseId}`)} className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors shrink-0">
             <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
@@ -204,9 +222,9 @@ export default function LessonPage() {
         
         {/* Testing State UI */}
         {testMode && !isCompleted ? (
-          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800 mb-6 animate-in fade-in duration-500">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-              <HelpCircle className="w-8 h-8 text-[#2D5A27] dark:text-[#A8E6CF]" />
+          <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800 mb-6 animate-in fade-in duration-500">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+              <HelpCircle className="w-6 h-6 sm:w-8 sm:h-8 text-[#2D5A27] dark:text-[#A8E6CF]" />
               Darsni o'zlashtirish testi
             </h2>
             
@@ -232,23 +250,23 @@ export default function LessonPage() {
                   const q = quizzes[currentQuizIndex];
                   const idx = currentQuizIndex;
                   return (
-                    <div key={q.id} className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-gray-100 dark:border-gray-800 transition-colors duration-300">
-                      <div className="flex justify-between items-center mb-6">
-                         <span className="text-sm font-bold text-gray-500 bg-gray-200 dark:bg-gray-700 px-4 py-1.5 rounded-full text-center">
+                    <div key={q.id} className="p-4 sm:p-5 bg-gray-50 dark:bg-gray-800/50 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 transition-colors duration-300">
+                      <div className="flex justify-between items-center mb-4 sm:mb-5">
+                         <span className="text-xs sm:text-sm font-bold text-gray-500 bg-gray-200 dark:bg-gray-700 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-center">
                             Savol {idx + 1} / {quizzes.length}
                          </span>
-                         <span className="text-sm font-bold text-yellow-600 bg-yellow-100/80 px-4 py-1.5 rounded-full text-center shadow-sm">
+                         <span className="text-xs sm:text-sm font-bold text-yellow-600 bg-yellow-100/80 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-center shadow-sm">
                             +{q.reward_coins || 10} tanga
                          </span>
                       </div>
-                      <p className="font-bold text-gray-900 dark:text-white mb-6 text-xl md:text-2xl leading-relaxed">
+                      <p className="font-bold text-gray-900 dark:text-white mb-4 sm:mb-5 text-base sm:text-lg md:text-xl leading-snug">
                         {q.question}
                       </p>
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 gap-2 sm:gap-3">
                         {(q.options as string[]).map((opt, oIdx) => (
                           <label 
                             key={oIdx} 
-                            className={`flex items-center gap-4 p-5 rounded-2xl cursor-pointer transition-all border-2 select-none ${
+                            className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl cursor-pointer transition-all border-2 select-none active:scale-[0.99] ${
                               testAnswers[q.id] === oIdx 
                                 ? 'border-[#2D5A27] bg-[#2D5A27]/5 dark:border-[#A8E6CF] dark:bg-[#A8E6CF]/10 shadow-sm' 
                                 : 'border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-600 shadow-sm'
@@ -259,12 +277,12 @@ export default function LessonPage() {
                               name={`quiz_${q.id}`} 
                               checked={testAnswers[q.id] === oIdx}
                               onChange={() => setTestAnswers(prev => ({...prev, [q.id]: oIdx}))}
-                              className="w-5 h-5 text-[#2D5A27] dark:text-[#A8E6CF] focus:ring-[#2D5A27] dark:focus:ring-[#A8E6CF]"
+                              className="hidden"
                             />
-                            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 ${testAnswers[q.id] === oIdx ? 'border-[#2D5A27] dark:border-[#A8E6CF]' : 'border-gray-300 dark:border-gray-600'}`}>
-                               <span className={`text-sm font-bold ${testAnswers[q.id] === oIdx ? 'text-[#2D5A27] dark:text-[#A8E6CF]' : 'text-gray-400'}`}>{String.fromCharCode(65 + oIdx)}</span>
+                            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${testAnswers[q.id] === oIdx ? 'border-[#2D5A27] bg-[#2D5A27] dark:border-[#A8E6CF] dark:bg-[#A8E6CF]' : 'border-gray-300 dark:border-gray-600'}`}>
+                               <span className={`text-[10px] sm:text-sm font-bold ${testAnswers[q.id] === oIdx ? 'text-white dark:text-gray-900' : 'text-gray-400'}`}>{String.fromCharCode(65 + oIdx)}</span>
                             </div>
-                            <span className="text-gray-700 dark:text-gray-200 font-medium text-[17px]">{opt}</span>
+                            <span className={`font-medium text-sm sm:text-base ${testAnswers[q.id] === oIdx ? 'text-[#2D5A27] dark:text-[#A8E6CF] font-bold' : 'text-gray-700 dark:text-gray-200'} leading-tight`}>{opt}</span>
                           </label>
                         ))}
                       </div>
@@ -281,10 +299,15 @@ export default function LessonPage() {
                          handleSubmitTest();
                      }
                   }}
-                  disabled={testAnswers[quizzes[currentQuizIndex].id] === undefined}
-                  className="w-full py-5 bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] shadow-xl shadow-green-500/20 text-white rounded-2xl font-bold text-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                  disabled={testAnswers[quizzes[currentQuizIndex].id] === undefined || isCompleting}
+                  className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] shadow-lg shadow-green-500/20 text-white rounded-xl font-bold text-base hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
                 >
-                  {currentQuizIndex < quizzes.length - 1 ? (
+                  {isCompleting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Tekshirilmoqda...
+                    </>
+                  ) : currentQuizIndex < quizzes.length - 1 ? (
                      <>Keyingi savol <ArrowRight className="w-5 h-5 ml-1" /></>
                   ) : (
                      <>Javoblarni yuborish <CheckCircle className="w-5 h-5 ml-1" /></>
@@ -353,12 +376,15 @@ export default function LessonPage() {
             ) : isCompleted ? (
               <div className="bg-[#A8E6CF]/20 dark:bg-[#A8E6CF]/10 border-2 border-[#2D5A27]/20 dark:border-[#A8E6CF]/20 rounded-2xl p-5 flex items-center gap-4">
                 <CheckCircle className="w-8 h-8 text-[#2D5A27] dark:text-[#A8E6CF] shrink-0" />
-                <div>
+                <div className="flex-1">
                   <p className="font-bold text-[#2D5A27] dark:text-[#A8E6CF]">Dars tugallangan ✅</p>
                   {completionResult?.coins_earned > 0 && (
-                    <p className="text-xs text-[#2D5A27]/70 dark:text-[#A8E6CF]/70 mt-0.5">+{completionResult.coins_earned} tanga qo&apos;lga kiritildi</p>
+                    <p className="text-xs text-[#2D5A27]/70 dark:text-[#A8E6CF]/70 mt-0.5">
+                      +{completionResult.coins_earned} tanga qo'lga kiritildi. {isRedirecting && 'Keyingi darsga o\'tilmoqda...'}
+                    </p>
                   )}
                 </div>
+                {isRedirecting && <Loader2 className="w-5 h-5 text-[#2D5A27] dark:text-[#A8E6CF] animate-spin shrink-0" />}
               </div>
             ) : (
               <button

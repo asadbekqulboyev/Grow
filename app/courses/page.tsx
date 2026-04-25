@@ -95,12 +95,9 @@ export default function CoursesPage() {
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#F3F4F6] dark:bg-[#111827] transition-colors duration-300">
       {/* Header */}
-      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-[15px] sm:px-8 z-10 sticky top-0 transition-colors duration-300">
+      <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-[15px] sm:px-8 z-40 sticky top-0 transition-colors duration-300">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#A8E6CF] to-[#2D5A27] flex items-center justify-center shadow-sm shrink-0">
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
-          <h2 className="text-lg sm:text-xl font-bold dark:text-white truncate">Barcha Kurslar</h2>
+          <h2 className="text-lg sm:text-xl font-bold dark:text-white truncate">Kurslar</h2>
         </div>
         <div className="flex items-center gap-3 sm:gap-6 shrink-0">
           <LanguageSwitcher />
@@ -155,7 +152,7 @@ export default function CoursesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCourses.map((course) => (
-              <div key={course.id} className="bg-white dark:bg-gray-900 rounded-[28px] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col border border-gray-100 dark:border-gray-800">
+              <div key={course.id} className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-[28px] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col border border-gray-100 dark:border-gray-800">
                 
                 {/* Course Image / Banner */}
                 <div className="h-48 bg-gradient-to-br from-[#A8E6CF] to-[#2D5A27] relative w-full overflow-hidden">
@@ -191,7 +188,7 @@ export default function CoursesPage() {
                     </span>
                   </div>
 
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white leading-tight mb-1 group-hover:text-[#2D5A27] dark:group-hover:text-[#A8E6CF] transition-colors">{course.title}</h3>
+                  <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white leading-tight mb-1 group-hover:text-[#2D5A27] dark:group-hover:text-[#A8E6CF] transition-colors">{course.title}</h3>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium flex items-center gap-1.5">
                     <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-[8px]">
                       {(course.author?.[0] || 'A').toUpperCase()}

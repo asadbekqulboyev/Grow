@@ -2,6 +2,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@layer base {
+  button:not(:disabled), [role="button"], a {
+    cursor: pointer;
+  }
+}
+
 @layer utilities {
   .animate-float-slow {
     animation: float-orb 25s ease-in-out infinite;
