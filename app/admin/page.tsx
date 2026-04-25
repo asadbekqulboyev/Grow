@@ -217,7 +217,10 @@ export default function AdminPanel() {
       });
     } else {
       setEditingLessonId(null);
-      setLessonForm({ course_id: selectedCourseId || (courses[0]?.id || ''), title: '', description: '', video_url: '', content_text: '', order_index: 1, is_free: false, reward_coins: 10 });
+      const cId = selectedCourseId || (courses[0]?.id || '');
+      const existingLessons = lessons.filter(l => l.course_id === cId);
+      const maxOrder = existingLessons.length > 0 ? Math.max(...existingLessons.map(l => l.order_index)) : 0;
+      setLessonForm({ course_id: cId, title: '', description: '', video_url: '', content_text: '', order_index: maxOrder + 1, is_free: false, reward_coins: 10 });
     }
     setShowLessonForm(true);
   };
@@ -237,7 +240,10 @@ export default function AdminPanel() {
       });
     } else {
       setEditingQuizId(null);
-      setQuizForm({ course_id: selectedCourseId || (courses[0]?.id || ''), question: '', options: '["A", "B"]', correct_option_index: 0, order_index: 1, reward_coins: 10 });
+      const cId = selectedCourseId || (courses[0]?.id || '');
+      const existingQuizzes = quizzes.filter(q => q.course_id === cId);
+      const maxOrder = existingQuizzes.length > 0 ? Math.max(...existingQuizzes.map(q => q.order_index)) : 0;
+      setQuizForm({ course_id: cId, question: '', options: '["A", "B"]', correct_option_index: 0, order_index: maxOrder + 1, reward_coins: 10 });
     }
     setShowQuizForm(true);
   };
@@ -334,6 +340,7 @@ export default function AdminPanel() {
                 <tr>
                   <th className="px-4 py-3 rounded-tl-xl">Rasm</th>
                   <th className="px-4 py-3">Sarlavha</th>
+                  <th className="px-4 py-3">Muallif</th>
                   <th className="px-4 py-3">Turkum</th>
                   <th className="px-4 py-3">Daraja</th>
                   <th className="px-4 py-3">Tanga</th>
@@ -533,6 +540,7 @@ export default function AdminPanel() {
                         <option value="Biznes">Biznes</option>
                         <option value="Notiqlik">Notiqlik</option>
                         <option value="Time Management">Time Management</option>
+                        <option value="Imij">Imij (Shaxsiy Brend)</option>
                         <option value="Boshqa">Boshqa</option>
                       </select>
                     </div>
