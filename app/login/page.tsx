@@ -55,7 +55,6 @@ export default function LoginPage() {
             <div className="w-16 h-16 flex items-center justify-center relative">
               <Image src="/images/logo.png" alt="Grow.UZ Logo" fill className="object-contain" referrerPolicy="no-referrer" />
             </div>
-            <span className="font-bold text-gray-900 tracking-tight text-xl mt-2">Grow.UZ</span>
         </Link>
         
         <div className="text-center mb-8">
