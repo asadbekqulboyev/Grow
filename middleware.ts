@@ -5,6 +5,16 @@ const protectedRoutes = ['/dashboard', '/courses', '/ai-mentor', '/profile', '/a
 const adminEmail = process.env.ADMIN_EMAIL || 'asadbekqulboyev@gmail.com'
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Skip middleware for non-protected, non-login routes (landing page, etc.)
+  const isProtected = protectedRoutes.some(route => pathname.startsWith(route))
+  const isLoginPage = pathname === '/login'
+  
+  if (!isProtected && !isLoginPage) {
+    return NextResponse.next()
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -16,7 +26,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, { ...options })
@@ -26,12 +36,11 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const pathname = request.nextUrl.pathname
+  // getSession reads from cookie — no network call, very fast
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
 
   // Protected routes: redirect to login if not authenticated
-  const isProtected = protectedRoutes.some(route => pathname.startsWith(route))
   if (isProtected && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -46,7 +55,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // If user is logged in and tries to go to login page, redirect to dashboard
-  if (pathname === '/login' && user) {
+  if (isLoginPage && user) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

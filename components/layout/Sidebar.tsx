@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link'
-import Image from 'next/image'
+import { Logo } from '@/components/Logo'
 import { usePathname } from 'next/navigation'
 import { Home, Compass, ShoppingBag, User, Sparkles } from 'lucide-react'
 
@@ -18,9 +18,7 @@ export function Sidebar() {
   return (
     <aside className="hidden sm:flex flex-col w-64 h-screen fixed top-0 left-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 p-6 z-10 transition-colors duration-300">
       <div className="flex items-center mb-10">
-        <div className="w-10 h-10 flex items-center justify-center relative">
-          <Image src="/images/logo.png" alt="Grow.UZ Logo" fill className="object-contain" referrerPolicy="no-referrer" />
-        </div>
+        <Logo size={40} />
         <span className="text-2xl font-bold tracking-tight text-[#2D5A27] dark:text-[#A8E6CF] mt-1 -ml-1">Grow.UZ</span>
       </div>
 

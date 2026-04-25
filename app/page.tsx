@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import { Logo } from '@/components/Logo';
+import { LandingNav, HeroCTA } from '@/components/LandingNav';
 import { ArrowRight, BookOpen, Star, Shield, Cpu, Target, Award, Users, CheckCircle, MessageSquareQuote, PlayCircle, Trophy } from 'lucide-react';
 
 export default function LandingPage() {
@@ -7,34 +8,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#111827] text-gray-900 dark:text-gray-100 font-sans selection:bg-[#A8E6CF] selection:text-[#2D5A27]">
       
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 transition-colors">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="w-10 h-10 flex items-center justify-center relative">
-              <Image src="/images/logo.png" alt="Grow.UZ Logo" fill className="object-contain" referrerPolicy="no-referrer" />
-            </div>
-          </div>
-          <div className="hidden md:flex items-center gap-8 font-medium">
-            <Link href="#courses" className="hover:text-[#2D5A27] dark:hover:text-[#A8E6CF] transition-colors">Kurslar</Link>
-            <Link href="#features" className="hover:text-[#2D5A27] dark:hover:text-[#A8E6CF] transition-colors">Imkoniyatlar</Link>
-            <Link href="#ai-mentor" className="hover:text-[#2D5A27] dark:hover:text-[#A8E6CF] transition-colors">AI Mentor</Link>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link 
-              href="/login" 
-              className="px-6 py-2.5 rounded-full font-bold text-[#2D5A27] dark:text-[#A8E6CF] bg-[#A8E6CF]/20 hover:bg-[#A8E6CF]/30 transition-colors"
-            >
-              Kirish
-            </Link>
-            <Link 
-              href="/login" 
-              className="hidden sm:inline-flex px-6 py-2.5 rounded-full font-bold text-white bg-[#2D5A27] hover:bg-[#1f421a] shadow-lg shadow-[#2D5A27]/20 transition-all hover:-translate-y-0.5"
-            >
-              Boshlash
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <LandingNav />
 
       <main>
         {/* Hero Section */}
@@ -69,20 +43,7 @@ export default function LandingPage() {
               Notiqlik, SMM, Vaqtni boshqarish va boshqa zamonaviy ko&apos;nikmalarni AI yordamchisiz bilishdan ko&apos;proq narsaga ega bo&apos;ling.
             </p>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link 
-                href="/login" 
-                className="w-full sm:w-auto px-8 py-4 rounded-full font-bold text-white bg-[#2D5A27] hover:bg-[#1f421a] shadow-xl shadow-[#2D5A27]/20 transition-all hover:-translate-y-1 flex items-center justify-center gap-2 text-lg"
-              >
-                Hoziroq boshlash <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link 
-                href="#courses" 
-                className="w-full sm:w-auto px-8 py-4 rounded-full font-bold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all text-lg flex items-center justify-center"
-              >
-                Kurslarni ko&apos;rish
-              </Link>
-            </div>
+            <HeroCTA />
           </div>
         </section>
 
@@ -457,9 +418,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div className="md:col-span-2">
             <div className="flex items-center mb-4">
-              <div className="w-8 h-8 flex items-center justify-center relative">
-                <Image src="/images/logo.png" alt="Grow.UZ Logo" fill className="object-contain" referrerPolicy="no-referrer" />
-              </div>
+              <Logo size={32} />
             </div>
             <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm">O&apos;zbekiston yoshlari uchun sifatli va zamonaviy ko&apos;nikmalar taqdim etuvchi innovatsion o&apos;quv platformasi.</p>
           </div>
