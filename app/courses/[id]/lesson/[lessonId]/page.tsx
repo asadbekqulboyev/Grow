@@ -12,8 +12,10 @@ interface Lesson {
   title: string;
   description: string | null;
   video_url: string | null;
-  duration_minutes: number;
+  content_text: string | null;
   order_index: number;
+  is_free: boolean;
+  reward_coins: number;
 }
 
 interface Course {
@@ -23,17 +25,12 @@ interface Course {
 
 function getYouTubeEmbedUrl(url: string): string | null {
   try {
-    const urlObj = new URL(url);
-    let videoId = '';
-    
-    if (urlObj.hostname.includes('youtube.com')) {
-      videoId = urlObj.searchParams.get('v') || '';
-    } else if (urlObj.hostname.includes('youtu.be')) {
-      videoId = urlObj.pathname.slice(1);
-    }
-    
-    if (videoId) {
-      return `https://www.youtube.com/embed/${videoId}`;
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0&modestbranding=1&iv_load_policy=3`;
     }
   } catch {}
   return null;
@@ -86,7 +83,7 @@ export default function LessonPage() {
             .eq('completed', true);
 
           if (isMounted && progressData) {
-            const ids = new Set(progressData.map((p: any) => p.lesson_id));
+            const ids = new Set<string>(progressData.map((p: any) => p.lesson_id));
             setCompletedLessonIds(ids);
             setIsCompleted(ids.has(lessonId));
           }
@@ -162,10 +159,6 @@ export default function LessonPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" />
-            {lesson.duration_minutes} daq
-          </span>
           <span className="text-xs font-semibold text-[#2D5A27] dark:text-[#A8E6CF] bg-[#A8E6CF]/20 px-3 py-1.5 rounded-full">
             {currentIndex + 1} / {allLessons.length}
           </span>
@@ -175,8 +168,11 @@ export default function LessonPage() {
       {/* Main Content */}
       <div className="flex-1 p-4 sm:p-8 pb-24 max-w-5xl mx-auto w-full">
         
-        {/* Video Player Area */}
-        <div className="bg-gray-900 rounded-3xl overflow-hidden shadow-lg mb-6 aspect-video relative">
+        {/* Video Player Area — Protected */}
+        <div 
+          className="bg-gray-900 rounded-3xl overflow-hidden shadow-lg mb-6 aspect-video relative select-none"
+          onContextMenu={(e) => e.preventDefault()}
+        >
           {embedUrl ? (
             <iframe
               src={embedUrl}
@@ -184,23 +180,26 @@ export default function LessonPage() {
               className="w-full h-full absolute inset-0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
+              sandbox="allow-scripts allow-same-origin allow-presentation"
             />
-          ) : lesson.video_url ? (
-            <video
-              src={lesson.video_url}
-              controls
-              className="w-full h-full absolute inset-0 object-contain"
-            >
-              Brauzeringiz video formatini qo&apos;llab-quvvatlamaydi.
-            </video>
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#1b3d16] to-[#0d210b] text-white">
-              <PlayCircle className="w-16 h-16 text-[#A8E6CF]/50 mb-4" />
-              <h3 className="text-lg font-bold mb-2">Video hali joylashtirilmagan</h3>
-              <p className="text-sm text-[#A8E6CF]/70">Tez orada ushbu darsga video qo&apos;shiladi</p>
+            <div className="w-full h-full absolute inset-0 flex items-center justify-center text-gray-500">
+              <PlayCircle className="w-16 h-16 opacity-30" />
             </div>
           )}
         </div>
+
+        {/* Content Text */}
+        {lesson.content_text && (
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 mb-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-[#2D5A27] dark:text-[#A8E6CF]" /> Dars eslatmalari
+            </h3>
+            <div className="text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
+              {lesson.content_text}
+            </div>
+          </div>
+        )}
 
         {/* Lesson Info Card */}
         <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800 mb-6">
@@ -314,7 +313,7 @@ export default function LessonPage() {
                   {completedLessonIds.has(l.id) ? <CheckCircle className="w-4 h-4" /> : l.order_index}
                 </div>
                 <span className="line-clamp-1 text-sm">{l.title}</span>
-                <span className="ml-auto text-xs text-gray-400 shrink-0">{l.duration_minutes}&apos;</span>
+                <span className="ml-auto text-xs text-gray-400 shrink-0">{l.order_index}</span>
               </Link>
             ))}
           </div>

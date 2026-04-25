@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Clock, PlayCircle, Coins, Lock, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Clock, PlayCircle, Coins, Lock, CheckCircle, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -13,9 +13,9 @@ interface Course {
   description: string;
   category: string;
   level: string;
-  duration_minutes: number;
   reward_coins: number;
   image_url: string | null;
+  author: string | null;
 }
 
 interface Lesson {
@@ -138,8 +138,8 @@ export default function CourseDetailsPage() {
                 {course.category}
               </span>
               <span className="bg-white/20 text-white backdrop-blur-md text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                {course.duration_minutes} daqiqa
+                <BookOpen className="w-3.5 h-3.5" />
+                {course.level}
               </span>
               <span className="bg-yellow-500/20 text-yellow-300 backdrop-blur-md border border-yellow-500/30 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
                 <Coins className="w-3.5 h-3.5" />
@@ -147,6 +147,16 @@ export default function CourseDetailsPage() {
               </span>
             </div>
             
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 mb-8 self-center md:self-start w-fit">
+              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm">
+                {(course.author?.[0] || 'A').toUpperCase()}
+              </div>
+              <div>
+                <p className="text-xs text-white/60 font-medium">Ustoz / Muallif</p>
+                <p className="text-sm text-white font-bold">{course.author || 'Asadbek'}</p>
+              </div>
+            </div>
+
             <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-4 leading-tight">
               {course.title}
             </h1>

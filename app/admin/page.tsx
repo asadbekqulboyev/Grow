@@ -2,9 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Settings, BookOpen, Users, Video, LogOut, Plus, Edit2, Trash2, X, HelpCircle } from 'lucide-react';
+import { Settings, BookOpen, Users, Video, LogOut, Plus, Edit2, Trash2, X, HelpCircle, Youtube, Eye, Coins, Upload, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+
+function getYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
 
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,15 +36,43 @@ export default function AdminPanel() {
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [courseForm, setCourseForm] = useState({
-    title: '', description: '', category: '', level: '', duration_minutes: 60, reward_coins: 100, image_url: ''
+    title: '', description: '', category: '', level: '', reward_coins: 100, image_url: '', author: ''
   });
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('course-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('course-images')
+        .getPublicUrl(fileName);
+
+      setCourseForm({ ...courseForm, image_url: publicUrl });
+    } catch (err: any) {
+      alert("Rasm yuklashda xatolik. Supabase'da 'course-images' nomli Public bucket borligiga ishonch hosil qiling.\n" + err.message);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   // Lesson Form State
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const [lessonForm, setLessonForm] = useState({
-    course_id: '', title: '', description: '', video_url: '', duration_minutes: 10, order_index: 1
+    course_id: '', title: '', description: '', video_url: '', content_text: '', order_index: 1, is_free: false, reward_coins: 10
   });
 
   const fetchCourses = async () => {
@@ -106,13 +147,19 @@ export default function AdminPanel() {
 
   // --- Course Handlers ---
   const saveCourse = async () => {
-    if (editingCourseId) {
-      await supabase.from('courses').update(courseForm).eq('id', editingCourseId);
-    } else {
-      await supabase.from('courses').insert([courseForm]);
+    try {
+      if (editingCourseId) {
+        const { error } = await supabase.from('courses').update(courseForm).eq('id', editingCourseId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('courses').insert([courseForm]);
+        if (error) throw error;
+      }
+      setShowCourseForm(false);
+      fetchCourses();
+    } catch (err: any) {
+      alert("Kursni saqlashda xatolik yuz berdi:\n" + err.message);
     }
-    setShowCourseForm(false);
-    fetchCourses();
   };
 
   const deleteCourse = async (id: string) => {
@@ -127,24 +174,30 @@ export default function AdminPanel() {
       setEditingCourseId(course.id);
       setCourseForm({
         title: course.title, description: course.description, category: course.category, level: course.level,
-        duration_minutes: course.duration_minutes, reward_coins: course.reward_coins, image_url: course.image_url || ''
+        reward_coins: course.reward_coins, image_url: course.image_url || '', author: course.author || ''
       });
     } else {
       setEditingCourseId(null);
-      setCourseForm({ title: '', description: '', category: 'Boshqa', level: 'Boshlang\'ich', duration_minutes: 60, reward_coins: 100, image_url: '' });
+      setCourseForm({ title: '', description: '', category: 'Boshqa', level: 'Boshlang\'ich', reward_coins: 100, image_url: '', author: 'Asadbek' });
     }
     setShowCourseForm(true);
   };
 
   // --- Lesson Handlers ---
   const saveLesson = async () => {
-    if (editingLessonId) {
-      await supabase.from('lessons').update(lessonForm).eq('id', editingLessonId);
-    } else {
-      await supabase.from('lessons').insert([lessonForm]);
+    try {
+      if (editingLessonId) {
+        const { error } = await supabase.from('lessons').update(lessonForm).eq('id', editingLessonId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('lessons').insert([lessonForm]);
+        if (error) throw error;
+      }
+      setShowLessonForm(false);
+      fetchLessons();
+    } catch (err: any) {
+      alert("Darsni saqlashda xatolik yuz berdi:\n" + err.message);
     }
-    setShowLessonForm(false);
-    fetchLessons();
   };
 
   const deleteLesson = async (id: string) => {
@@ -159,11 +212,12 @@ export default function AdminPanel() {
       setEditingLessonId(lesson.id);
       setLessonForm({
         course_id: lesson.course_id, title: lesson.title, description: lesson.description || '',
-        video_url: lesson.video_url || '', duration_minutes: lesson.duration_minutes, order_index: lesson.order_index
+        video_url: lesson.video_url || '', content_text: lesson.content_text || '', order_index: lesson.order_index,
+        is_free: lesson.is_free || false, reward_coins: lesson.reward_coins || 10
       });
     } else {
       setEditingLessonId(null);
-      setLessonForm({ course_id: selectedCourseId || (courses[0]?.id || ''), title: '', description: '', video_url: '', duration_minutes: 10, order_index: 1 });
+      setLessonForm({ course_id: selectedCourseId || (courses[0]?.id || ''), title: '', description: '', video_url: '', content_text: '', order_index: 1, is_free: false, reward_coins: 10 });
     }
     setShowLessonForm(true);
   };
@@ -297,6 +351,7 @@ export default function AdminPanel() {
                       ) : <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>}
                     </td>
                     <td className="px-4 py-3 font-medium dark:text-white">{course.title}</td>
+                    <td className="px-4 py-3 text-gray-500 font-medium">{course.author || 'Asadbek'}</td>
                     <td className="px-4 py-3 text-gray-500">{course.category}</td>
                     <td className="px-4 py-3 text-gray-500">{course.level}</td>
                     <td className="px-4 py-3 text-gray-500">{course.reward_coins}</td>
@@ -341,8 +396,9 @@ export default function AdminPanel() {
                   <th className="px-4 py-3 rounded-tl-xl text-center w-16">Tartib</th>
                   <th className="px-4 py-3">Dars nomi</th>
                   <th className="px-4 py-3">Kurs</th>
-                  <th className="px-4 py-3">Davomiylik</th>
-                  <th className="px-4 py-3">Video URL</th>
+                  <th className="px-4 py-3">Cover</th>
+                  <th className="px-4 py-3">Bepul?</th>
+                  <th className="px-4 py-3">Tanga</th>
                   <th className="px-4 py-3 rounded-tr-xl text-right">Amallar</th>
                 </tr>
               </thead>
@@ -352,8 +408,17 @@ export default function AdminPanel() {
                     <td className="px-4 py-3 font-bold text-center text-gray-500">{lesson.order_index}</td>
                     <td className="px-4 py-3 font-medium dark:text-white">{lesson.title}</td>
                     <td className="px-4 py-3 text-gray-500">{(lesson as any).courses?.title || 'Noma\'lum'}</td>
-                    <td className="px-4 py-3 text-gray-500">{lesson.duration_minutes} daq</td>
-                    <td className="px-4 py-3 text-blue-500 truncate max-w-[150px]">{lesson.video_url || '-'}</td>
+                    <td className="px-4 py-3">
+                      {lesson.video_url ? (
+                        <img src={`https://img.youtube.com/vi/${getYouTubeId(lesson.video_url)}/mqdefault.jpg`} alt="" className="w-20 h-12 object-cover rounded-lg" />
+                      ) : <div className="w-20 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center"><Video className="w-4 h-4 text-gray-400" /></div>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${lesson.is_free ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>
+                        {lesson.is_free ? 'Bepul' : 'Pullik'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-yellow-500 font-bold">+{lesson.reward_coins || 10}</td>
                     <td className="px-4 py-3 flex justify-end gap-2 text-right">
                       <button onClick={() => openLessonForm(lesson)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"><Edit2 className="w-4 h-4" /></button>
                       <button onClick={() => deleteLesson(lesson.id)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"><Trash2 className="w-4 h-4" /></button>
@@ -450,29 +515,57 @@ export default function AdminPanel() {
                    <textarea rows={3} value={courseForm.description} onChange={e => setCourseForm({...courseForm, description: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
                  </div>
                  <div className="grid grid-cols-2 gap-4">
-                   <div>
-                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">Daraja (Boshlang&apos;ich, O&apos;rta...)</label>
-                     <input type="text" value={courseForm.level} onChange={e => setCourseForm({...courseForm, level: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
-                   </div>
-                   <div>
-                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">Turkum</label>
-                     <input type="text" value={courseForm.category} onChange={e => setCourseForm({...courseForm, category: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
-                   </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 dark:text-gray-300">Daraja</label>
+                      <select value={courseForm.level} onChange={e => setCourseForm({...courseForm, level: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]">
+                        <option value="Boshlang'ich">Boshlang&apos;ich</option>
+                        <option value="O'rta">O&apos;rta</option>
+                        <option value="Murakkab">Murakkab</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 dark:text-gray-300">Turkum</label>
+                      <select value={courseForm.category} onChange={e => setCourseForm({...courseForm, category: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]">
+                        <option value="SMM">SMM</option>
+                        <option value="Dasturlash">Dasturlash</option>
+                        <option value="Dizayn">Dizayn</option>
+                        <option value="Xorijiy tillar">Xorijiy tillar</option>
+                        <option value="Biznes">Biznes</option>
+                        <option value="Notiqlik">Notiqlik</option>
+                        <option value="Time Management">Time Management</option>
+                        <option value="Boshqa">Boshqa</option>
+                      </select>
+                    </div>
                  </div>
                  <div className="grid grid-cols-2 gap-4">
-                   <div>
-                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">Davomiyligi (daqiqa)</label>
-                     <input type="number" value={courseForm.duration_minutes} onChange={e => setCourseForm({...courseForm, duration_minutes: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
-                   </div>
-                   <div>
-                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">Sovrin (tanga)</label>
-                     <input type="number" value={courseForm.reward_coins} onChange={e => setCourseForm({...courseForm, reward_coins: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
-                   </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 dark:text-gray-300">Muallif / Mentor</label>
+                      <input type="text" value={courseForm.author} onChange={e => setCourseForm({...courseForm, author: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 dark:text-gray-300">Sovrin (tanga)</label>
+                      <input type="number" value={courseForm.reward_coins} onChange={e => setCourseForm({...courseForm, reward_coins: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                    </div>
                  </div>
                  <div>
-                   <label className="block text-sm font-medium mb-1 dark:text-gray-300">Rasm Manzili (URL)</label>
-                   <input type="text" value={courseForm.image_url} onChange={e => setCourseForm({...courseForm, image_url: e.target.value})} placeholder="/images/nomi.png" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
-                 </div>
+                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Rasm Yuklash yoki Manzili (URL)</label>
+                    <div className="flex flex-col gap-3">
+                      {courseForm.image_url && (
+                        <div className="relative w-full h-32 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                          <Image src={courseForm.image_url} alt="Joylanayotgan rasm" fill className="object-cover" />
+                        </div>
+                      )}
+                      <div className="flex gap-2 items-center">
+                        <label className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl cursor-pointer transition-colors w-1/3 shrink-0">
+                          {isUploadingImage ? <Loader2 className="w-5 h-5 animate-spin text-gray-500" /> : <Upload className="w-5 h-5 text-gray-500" />}
+                          <span className="text-sm font-medium dark:text-gray-300">{isUploadingImage ? 'Yuklanmoqda...' : 'Yuklash'}</span>
+                          <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploadingImage} />
+                        </label>
+                        <span className="text-xs text-gray-400">yoki</span>
+                        <input type="text" value={courseForm.image_url} onChange={e => setCourseForm({...courseForm, image_url: e.target.value})} placeholder="https://" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                      </div>
+                    </div>
+                  </div>
               </div>
               <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/30">
                  <button onClick={() => setShowCourseForm(false)} className="px-5 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 font-medium">Bekor qilish</button>
@@ -507,19 +600,37 @@ export default function AdminPanel() {
                    <textarea rows={2} value={lessonForm.description} onChange={e => setLessonForm({...lessonForm, description: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
                  </div>
                  <div>
-                   <label className="block text-sm font-medium mb-1 dark:text-gray-300">Video Havolasi (URL)</label>
-                   <input type="text" value={lessonForm.video_url} onChange={e => setLessonForm({...lessonForm, video_url: e.target.value})} placeholder="https://www.youtube.com/..." className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
-                 </div>
-                 <div className="grid grid-cols-2 gap-4">
-                   <div>
-                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">Tartib Raqami</label>
-                     <input type="number" value={lessonForm.order_index} onChange={e => setLessonForm({...lessonForm, order_index: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
-                   </div>
-                   <div>
-                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">Daqiqa (Davomiyligi)</label>
-                     <input type="number" value={lessonForm.duration_minutes} onChange={e => setLessonForm({...lessonForm, duration_minutes: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
-                   </div>
-                 </div>
+                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">YouTube Video Havolasi</label>
+                    <input type="text" value={lessonForm.video_url} onChange={e => setLessonForm({...lessonForm, video_url: e.target.value})} placeholder="https://www.youtube.com/watch?v=... yoki https://youtu.be/..." className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                    {lessonForm.video_url && getYouTubeId(lessonForm.video_url) && (
+                      <div className="mt-3 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <img src={`https://img.youtube.com/vi/${getYouTubeId(lessonForm.video_url)}/hqdefault.jpg`} alt="Video preview" className="w-full h-40 object-cover" />
+                        <div className="p-2 bg-gray-50 dark:bg-gray-800 flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                          <Youtube className="w-4 h-4" /> Video topildi ✓
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Dars Matni / Qo'shimcha Eslatmalar</label>
+                    <textarea rows={3} value={lessonForm.content_text} onChange={e => setLessonForm({...lessonForm, content_text: e.target.value})} placeholder="Video ostida ko'rsatiladigan matn..." className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1 dark:text-gray-300">Tartib</label>
+                      <input type="number" value={lessonForm.order_index} onChange={e => setLessonForm({...lessonForm, order_index: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 dark:text-gray-300">Tanga</label>
+                      <input type="number" value={lessonForm.reward_coins} onChange={e => setLessonForm({...lessonForm, reward_coins: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                    </div>
+                    <div className="flex items-end">
+                      <label className="flex items-center gap-2 p-2.5 cursor-pointer">
+                        <input type="checkbox" checked={lessonForm.is_free} onChange={e => setLessonForm({...lessonForm, is_free: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-[#2D5A27] focus:ring-[#A8E6CF]" />
+                        <span className="text-sm font-medium dark:text-gray-300">Bepul</span>
+                      </label>
+                    </div>
+                  </div>
               </div>
               <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/30">
                  <button onClick={() => setShowLessonForm(false)} className="px-5 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 font-medium">Bekor qilish</button>

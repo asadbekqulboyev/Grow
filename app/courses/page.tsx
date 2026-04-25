@@ -13,16 +13,16 @@ interface Course {
   description: string;
   category: string;
   level: string;
-  duration_minutes: number;
   reward_coins: number;
   image_url: string | null;
+  author: string | null;
 }
 
 const FALLBACK_COURSES: Course[] = [
-  { id: 'fb1', title: 'Vaqtni boshqarish: Pomodoro siri', description: 'Pomodoro texnikasi yordamida diqqatni jamlashni oshirish va ko\'proq ish bajarish.', category: 'Vaqtni boshqarish', level: 'Boshlang\'ich', duration_minutes: 45, reward_coins: 100, image_url: null },
-  { id: 'fb2', title: 'Omma oldida ishonchli nutq', description: 'Kishilar oldida hayajonni yengish va o\'z fikrini aniq yetkazish usullari.', category: 'Notiqlik', level: 'O\'rta', duration_minutes: 60, reward_coins: 150, image_url: null },
-  { id: 'fb3', title: 'Jamoani shakllantirish', description: 'Haqiqiy lider qanday bo\'lishi kerak va jamoani umumiy maqsad sari yetaklash.', category: 'Liderlik', level: 'Mukammal', duration_minutes: 90, reward_coins: 200, image_url: null },
-  { id: 'fb4', title: 'Emotsional intellekt (EQ)', description: 'O\'z hissiyotlarini boshqarish va boshqalarni tushunish.', category: 'Muloqot', level: 'O\'rta', duration_minutes: 55, reward_coins: 120, image_url: null },
+  { id: 'fb1', title: 'Vaqtni boshqarish: Pomodoro siri', description: 'Pomodoro texnikasi yordamida diqqatni jamlashni oshirish va ko\'proq ish bajarish.', category: 'Vaqtni boshqarish', level: 'Boshlang\'ich', reward_coins: 100, image_url: null, author: 'Asadbek' },
+  { id: 'fb2', title: 'Omma oldida ishonchli nutq', description: 'Kishilar oldida hayajonni yengish va o\'z fikrini aniq yetkazish usullari.', category: 'Notiqlik', level: 'O\'rta', reward_coins: 150, image_url: null, author: 'Asadbek' },
+  { id: 'fb3', title: 'Jamoani shakllantirish', description: 'Haqiqiy lider qanday bo\'lishi kerak va jamoani umumiy maqsad sari yetaklash.', category: 'Liderlik', level: 'Mukammal', reward_coins: 200, image_url: null, author: 'Asadbek' },
+  { id: 'fb4', title: 'Emotsional intellekt (EQ)', description: 'O\'z hissiyotlarini boshqarish va boshqalarni tushunish.', category: 'Muloqot', level: 'O\'rta', reward_coins: 120, image_url: null, author: 'Asadbek' },
 ];
 
 export default function CoursesPage() {
@@ -189,12 +189,15 @@ export default function CoursesPage() {
                     }`}>
                       {course.level}
                     </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium flex items-center gap-1 ml-auto">
-                      <Clock className="w-3 h-3" /> {course.duration_minutes} daq
-                    </span>
                   </div>
 
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white leading-tight mb-2 group-hover:text-[#2D5A27] dark:group-hover:text-[#A8E6CF] transition-colors">{course.title}</h3>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white leading-tight mb-1 group-hover:text-[#2D5A27] dark:group-hover:text-[#A8E6CF] transition-colors">{course.title}</h3>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-[8px]">
+                      {(course.author?.[0] || 'A').toUpperCase()}
+                    </div>
+                    {course.author || 'Asadbek'}
+                  </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-6">{course.description}</p>
                   
                   <div className="mt-auto">

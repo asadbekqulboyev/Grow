@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 import { LandingNav, HeroCTA } from '@/components/LandingNav';
+import FeaturedCourses from '@/components/FeaturedCourses';
 import { ArrowRight, BookOpen, Star, Shield, Cpu, Target, Award, Users, CheckCircle, MessageSquareQuote, PlayCircle, Trophy } from 'lucide-react';
 
 export default function LandingPage() {
@@ -59,59 +60,7 @@ export default function LandingPage() {
               <p className="text-gray-500 dark:text-gray-400 max-w-xl mx-auto">Eng ko&apos;p talab qilinadigan ko&apos;nikmalarni o&apos;rganing va karyerangizni yangi bosqichga olib chiqing.</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {/* Course 1 */}
-              <div className="bg-[#F3F4F6] dark:bg-gray-800 rounded-3xl overflow-hidden hover:-translate-y-2 transition-transform duration-300 border border-transparent dark:border-gray-700 hover:shadow-xl hover:shadow-[#A8E6CF]/10">
-                <div className="h-48 w-full relative overflow-hidden bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <BookOpen className="w-16 h-16 text-white/30" />
-                  </div>
-                  <div className="absolute top-4 right-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#2D5A27] dark:text-[#A8E6CF]">Top rating</div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Ommaviy Notiqlik Sirlari</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 line-clamp-2">Auditoriya oldida ishonch bilan gapirish va odamlarni o&apos;zgartira olish ko&apos;nikmasi.</p>
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <span className="font-bold flex items-center gap-1.5 text-yellow-500"><Star className="w-4 h-4 fill-current"/> 4.9</span>
-                    <Link href="/login" className="text-sm font-bold text-[#2D5A27] dark:text-[#A8E6CF] hover:underline">Kursni boshlash &rarr;</Link>
-                  </div>
-                </div>
-              </div>
-
-              {/* Course 2 */}
-              <div className="bg-[#F3F4F6] dark:bg-gray-800 rounded-3xl overflow-hidden hover:-translate-y-2 transition-transform duration-300 border border-transparent dark:border-gray-700 hover:shadow-xl hover:shadow-[#A8E6CF]/10">
-                <div className="h-48 w-full relative overflow-hidden bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Target className="w-16 h-16 text-white/30" />
-                  </div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">SMM va Marketing</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 line-clamp-2">Ijtimoiy tarmoqlarda o&apos;z brendingizni yaratish va to&apos;g&apos;ri auditoriyani jalb qilish.</p>
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <span className="font-bold flex items-center gap-1.5 text-yellow-500"><Star className="w-4 h-4 fill-current"/> 4.8</span>
-                    <Link href="/login" className="text-sm font-bold text-[#2D5A27] dark:text-[#A8E6CF] hover:underline">Kursni boshlash &rarr;</Link>
-                  </div>
-                </div>
-              </div>
-
-              {/* Course 3 */}
-              <div className="bg-[#F3F4F6] dark:bg-gray-800 rounded-3xl overflow-hidden hover:-translate-y-2 transition-transform duration-300 border border-transparent dark:border-gray-700 hover:shadow-xl hover:shadow-[#A8E6CF]/10">
-                <div className="h-48 w-full relative overflow-hidden bg-gradient-to-br from-amber-400 via-orange-500 to-red-500">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Shield className="w-16 h-16 text-white/30" />
-                  </div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Time Management</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 line-clamp-2">Vaqtingizni shijoat va samaradorlik bilan boshqarish orqali maqsadlarga erishish.</p>
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <span className="font-bold flex items-center gap-1.5 text-yellow-500"><Star className="w-4 h-4 fill-current"/> 4.9</span>
-                    <Link href="/login" className="text-sm font-bold text-[#2D5A27] dark:text-[#A8E6CF] hover:underline">Kursni boshlash &rarr;</Link>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <FeaturedCourses />
             
             <div className="mt-12 text-center">
               <Link href="/login" className="inline-flex items-center gap-2 font-bold text-[#2D5A27] dark:text-[#A8E6CF] hover:gap-3 transition-all">
