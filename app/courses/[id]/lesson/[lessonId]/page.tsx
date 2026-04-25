@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, ArrowRight, Clock, PlayCircle, CheckCircle, BookOpen } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, PlayCircle, CheckCircle, BookOpen, Award, Loader2, PartyPopper } from 'lucide-react';
 import Link from 'next/link';
 
 interface Lesson {
@@ -49,6 +49,10 @@ export default function LessonPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [allLessons, setAllLessons] = useState<Lesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [completionResult, setCompletionResult] = useState<any>(null);
+  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!courseId || !lessonId) return;
@@ -58,6 +62,8 @@ export default function LessonPage() {
     async function fetchData() {
       setIsLoading(true);
       try {
+        const { data: { user } } = await supabase.auth.getUser();
+
         const [courseRes, lessonRes, allLessonsRes] = await Promise.all([
           supabase.from('courses').select('id, title').eq('id', courseId).single(),
           supabase.from('lessons').select('*').eq('id', lessonId).single(),
@@ -69,6 +75,22 @@ export default function LessonPage() {
           setLesson(lessonRes.data);
           setAllLessons(allLessonsRes.data || []);
         }
+
+        // Check existing progress
+        if (user) {
+          const { data: progressData } = await supabase
+            .from('user_progress')
+            .select('lesson_id')
+            .eq('user_id', user.id)
+            .eq('course_id', courseId)
+            .eq('completed', true);
+
+          if (isMounted && progressData) {
+            const ids = new Set(progressData.map((p: any) => p.lesson_id));
+            setCompletedLessonIds(ids);
+            setIsCompleted(ids.has(lessonId));
+          }
+        }
       } catch (err) {
         console.error('Dars yuklashda xatolik:', err);
       } finally {
@@ -79,6 +101,28 @@ export default function LessonPage() {
     fetchData();
     return () => { isMounted = false; };
   }, [courseId, lessonId]);
+
+  const handleCompleteLesson = async () => {
+    setIsCompleting(true);
+    try {
+      const res = await fetch('/api/complete-lesson', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lesson_id: lessonId, course_id: courseId }),
+      });
+      const data = await res.json();
+      
+      if (data.success || data.already_completed) {
+        setIsCompleted(true);
+        setCompletedLessonIds(prev => new Set(prev).add(lessonId));
+        setCompletionResult(data);
+      }
+    } catch (err) {
+      console.error('Xatolik:', err);
+    } finally {
+      setIsCompleting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -102,7 +146,6 @@ export default function LessonPage() {
   const currentIndex = allLessons.findIndex(l => l.id === lessonId);
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
-
   const embedUrl = lesson.video_url ? getYouTubeEmbedUrl(lesson.video_url) : null;
 
   return (
@@ -167,6 +210,50 @@ export default function LessonPage() {
           )}
         </div>
 
+        {/* Completion Button */}
+        <div className="mb-6">
+          {completionResult?.course_completed ? (
+            <div className="bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] rounded-3xl p-6 text-white text-center shadow-lg">
+              <PartyPopper className="w-12 h-12 mx-auto mb-3 text-yellow-300" />
+              <h3 className="text-xl font-bold mb-2">🎉 Tabriklaymiz!</h3>
+              <p className="text-sm text-white/80 mb-1">Siz kursni to&apos;liq tugatdingiz!</p>
+              <p className="text-sm font-bold text-yellow-300">+{completionResult.bonus_coins} bonus tanga qo&apos;lga kiritildi</p>
+              <p className="text-xs text-white/60 mt-2">Sertifikat avtomatik yaratildi — Profilga o&apos;ting</p>
+              <Link href="/profile" className="inline-block mt-4 px-6 py-2.5 bg-white text-[#2D5A27] rounded-xl font-bold text-sm hover:bg-gray-100 transition-colors">
+                <Award className="w-4 h-4 inline mr-1" /> Sertifikatni ko&apos;rish
+              </Link>
+            </div>
+          ) : isCompleted ? (
+            <div className="bg-[#A8E6CF]/20 dark:bg-[#A8E6CF]/10 border-2 border-[#2D5A27]/20 dark:border-[#A8E6CF]/20 rounded-2xl p-5 flex items-center gap-4">
+              <CheckCircle className="w-8 h-8 text-[#2D5A27] dark:text-[#A8E6CF] shrink-0" />
+              <div>
+                <p className="font-bold text-[#2D5A27] dark:text-[#A8E6CF]">Dars tugallangan ✅</p>
+                {completionResult?.coins_earned > 0 && (
+                  <p className="text-xs text-[#2D5A27]/70 dark:text-[#A8E6CF]/70 mt-0.5">+{completionResult.coins_earned} tanga qo&apos;lga kiritildi</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleCompleteLesson}
+              disabled={isCompleting}
+              className="w-full py-4 bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] text-white rounded-2xl font-bold text-base shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isCompleting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Saqlanmoqda...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-5 h-5" />
+                  Darsni tugatdim — +10 tanga
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
         {/* Navigation Buttons */}
         <div className="flex gap-4">
           {prevLesson ? (
@@ -191,11 +278,11 @@ export default function LessonPage() {
             </Link>
           ) : (
             <Link
-              href={`/courses/${courseId}`}
-              className="flex-1 flex items-center justify-center gap-2 py-4 bg-[#2D5A27] dark:bg-[#A8E6CF] text-white dark:text-[#111827] rounded-2xl font-bold hover:bg-[#1f421a] dark:hover:bg-[#86d4b8] transition-colors shadow-lg"
+              href={`/courses/${courseId}/quiz`}
+              className="flex-1 flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-2xl font-bold hover:from-yellow-600 hover:to-orange-600 transition-colors shadow-lg"
             >
-              <CheckCircle className="w-5 h-5" />
-              Kursni yakunlash
+              <Award className="w-5 h-5" />
+              Testga o&apos;tish
             </Link>
           )}
         </div>
@@ -218,11 +305,13 @@ export default function LessonPage() {
                 }`}
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                  l.id === lessonId 
-                    ? 'bg-[#2D5A27] dark:bg-[#A8E6CF] text-white dark:text-[#111827]' 
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                  completedLessonIds.has(l.id)
+                    ? 'bg-[#2D5A27] dark:bg-[#A8E6CF] text-white dark:text-[#111827]'
+                    : l.id === lessonId 
+                      ? 'bg-[#A8E6CF]/50 text-[#2D5A27]' 
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                 }`}>
-                  {l.order_index}
+                  {completedLessonIds.has(l.id) ? <CheckCircle className="w-4 h-4" /> : l.order_index}
                 </div>
                 <span className="line-clamp-1 text-sm">{l.title}</span>
                 <span className="ml-auto text-xs text-gray-400 shrink-0">{l.duration_minutes}&apos;</span>
