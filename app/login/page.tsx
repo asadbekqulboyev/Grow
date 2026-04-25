@@ -9,73 +9,43 @@ import Image from 'next/image';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.push('/dashboard');
+      }
+    });
+  }, [router]);
 
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true);
+      setError('');
       const supabase = createClient();
-      const redirectUri = `${window.location.origin}/api/auth/callback`;
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUri,
-          skipBrowserRedirect: true
+          redirectTo: `${window.location.origin}/api/auth/callback`,
         }
       });
       
-      if (error) throw error;
-      
-      // Navigate to the OAuth provider URL in a popup window
-      if (data?.url) {
-        const popup = window.open(data.url, 'oauth_popup', 'width=600,height=700');
-        if (!popup) {
-          alert("Iltimos, qalqib chiquvchi oynalarga ruxsat bering (Popup blocker'ni o'chiring).");
-          setIsLoading(false);
-        }
+      if (error) {
+        setError(error.message);
+        setIsLoading(false);
       }
-    } catch (e) {
+      // Browser will redirect to Google automatically
+    } catch (e: any) {
       console.error(e);
+      setError('Tizimga kirishda xatolik yuz berdi');
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    const handleMessage = async (event: MessageEvent) => {
-      const origin = event.origin;
-      // Allow only valid origins
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
-        return;
-      }
-      
-      if (event.data?.type === 'OAUTH_CODE_RECEIVED' && event.data.url) {
-        setIsLoading(true);
-        try {
-          const url = new URL(event.data.url);
-          const code = url.searchParams.get('code');
-          if (code) {
-            const supabase = createClient();
-            const { error } = await supabase.auth.exchangeCodeForSession(code);
-            if (error) throw error;
-            router.push('/dashboard');
-            router.refresh();
-          }
-        } catch (error) {
-          console.error('Session exchange error:', error);
-          alert('Tizimga kirishda xatolik yuz berdi. Qaytadan urinib ko\'ring.');
-          setIsLoading(false);
-        }
-      } else if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-        // Fallback for previous implementation just in case
-        router.push('/dashboard');
-        router.refresh();
-      }
-    };
-    
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [router]);
 
   return (
     <div className="flex-1 flex flex-col justify-center items-center min-h-screen bg-[#F3F4F6] pb-24">
@@ -92,6 +62,12 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-gray-900">Xush kelibsiz!</h1>
           <p className="text-gray-500 mt-2 text-sm max-w-[80%] mx-auto">Platformadan to&apos;liq foydalanish uchun tizimga kiring.</p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm text-center">
+            {error}
+          </div>
+        )}
         
         <div className="space-y-4">
           <button 
