@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Settings, BookOpen, Users, Video, LogOut, Plus, Edit2, Trash2, X, HelpCircle, Youtube, Eye, Coins, Upload, Loader2, FileSpreadsheet } from 'lucide-react';
+import { Settings, BookOpen, Users, Video, LogOut, Plus, Edit2, Trash2, X, HelpCircle, Youtube, Eye, Coins, Upload, Loader2, FileSpreadsheet, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { Toaster, toast } from 'react-hot-toast';
 
 function getYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -30,6 +31,7 @@ export default function AdminPanel() {
   const [lessons, setLessons] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, title: string, onConfirm: () => void} | null>(null);
   const supabase = createClient();
 
   // Course Form State
@@ -61,7 +63,7 @@ export default function AdminPanel() {
 
       setCourseForm({ ...courseForm, image_url: publicUrl });
     } catch (err: any) {
-      alert("Rasm yuklashda xatolik. Supabase'da 'course-images' nomli Public bucket borligiga ishonch hosil qiling.\n" + err.message);
+      toast.error("Rasm yuklashda xatolik. Supabase'da 'course-images' nomli Public bucket borligiga ishonch hosil qiling.");
     } finally {
       setIsUploadingImage(false);
     }
@@ -139,7 +141,10 @@ export default function AdminPanel() {
        
       if (activeTab === 'lessons') fetchLessons();
        
-      if (activeTab === 'quizzes') fetchQuizzes();
+      if (activeTab === 'quizzes') {
+        fetchQuizzes();
+        fetchLessons();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, isAuthenticated, selectedCourseId, selectedLessonIdForFilter]);
@@ -162,15 +167,20 @@ export default function AdminPanel() {
       setShowCourseForm(false);
       fetchCourses();
     } catch (err: any) {
-      alert("Kursni saqlashda xatolik yuz berdi:\n" + err.message);
+      toast.error("Kursni saqlashda xatolik yuz berdi:\n" + err.message);
     }
   };
 
   const deleteCourse = async (id: string) => {
-    if (confirm('Rostdan ham ushbu kursni o\'chirmoqchimisiz?')) {
-      await supabase.from('courses').delete().eq('id', id);
-      fetchCourses();
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Rostdan ham ushbu kursni o\'chirmoqchimisiz? Kurs bilan birga uning ichidagi barcha darslar va testlar ham bir umrga o\'chib ketadi!',
+      onConfirm: async () => {
+        await supabase.from('courses').delete().eq('id', id);
+        toast.success("Kurs muvaffaqiyatli o'chirildi!");
+        fetchCourses();
+      }
+    });
   };
 
   const openCourseForm = (course?: any) => {
@@ -200,15 +210,20 @@ export default function AdminPanel() {
       setShowLessonForm(false);
       fetchLessons();
     } catch (err: any) {
-      alert("Darsni saqlashda xatolik yuz berdi:\n" + err.message);
+      toast.error("Darsni saqlashda xatolik yuz berdi:\n" + err.message);
     }
   };
 
   const deleteLesson = async (id: string) => {
-    if (confirm('Ushbu darsni o\'chirmoqchimisiz?')) {
-      await supabase.from('lessons').delete().eq('id', id);
-      fetchLessons();
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Ushbu darsni rostdan ham o\'chirmoqchimisiz?',
+      onConfirm: async () => {
+        await supabase.from('lessons').delete().eq('id', id);
+        toast.success("Dars o'chirildi!");
+        fetchLessons();
+      }
+    });
   };
 
   const openLessonForm = (lesson?: any) => {
@@ -276,7 +291,7 @@ export default function AdminPanel() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!selectedCourseId) {
-      alert("Iltimos, oldin fayl yuklanadigan Kursni tanlang (tepadagi filterdan).");
+      toast.error("Iltimos, oldin fayl yuklanadigan Kursni tanlang (tepadagi filterdan).");
       return;
     }
     
@@ -312,14 +327,22 @@ export default function AdminPanel() {
             };
           });
           
-          if (confirm(`Siz ${payload.length} ta savol yukladingiz. Ularni bazaga saqlaymizmi?`)) {
-            const { error } = await supabase.from('quizzes').insert(payload);
-            if (error) throw error;
-            alert("Muvaffaqiyatli saqlandi!");
-            fetchQuizzes();
-          }
+          setConfirmModal({
+            isOpen: true,
+            title: `Siz ${payload.length} ta savol yukladingiz. Ularni bazaga saqlaymizmi?`,
+            onConfirm: async () => {
+              try {
+                const { error } = await supabase.from('quizzes').insert(payload);
+                if (error) throw error;
+                toast.success(`${payload.length} ta savol muvaffaqiyatli saqlandi!`);
+                fetchQuizzes();
+              } catch (e: any) {
+                toast.error("Xatolik: " + e.message);
+              }
+            }
+          });
         } catch(err:any) {
-           alert("Xatolik: " + err.message);
+           toast.error("Xatolik: " + err.message);
         } finally {
            setIsLoading(false);
            // reset target so same file can be uploaded again if needed
@@ -333,10 +356,15 @@ export default function AdminPanel() {
   }
 
   const deleteQuiz = async (id: string) => {
-    if (confirm('Ushbu testni (quiz) o\'chirmoqchimisiz?')) {
-      await supabase.from('quizzes').delete().eq('id', id);
-      fetchQuizzes();
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Ushbu testni (quiz) rostdan ham o\'chirmoqchimisiz?',
+      onConfirm: async () => {
+        await supabase.from('quizzes').delete().eq('id', id);
+        toast.success("Test muvaffaqiyatli o'chirildi!");
+        fetchQuizzes();
+      }
+    });
   };
 
   if (isCheckingAuth) {
@@ -361,7 +389,28 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="flex-1 flex flex-col p-6 max-w-7xl mx-auto w-full">
+    <div className="flex-1 flex flex-col p-6 max-w-7xl mx-auto w-full relative">
+      <Toaster position="top-right" toastOptions={{ duration: 4000, style: { background: '#2D5A27', color: '#fff', borderRadius: '16px', fontWeight: 'bold' } }} />
+      
+      {/* Confirm Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 overflow-hidden backdrop-blur-sm">
+           <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="p-6 text-center pt-8">
+                 <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
+                    <AlertTriangle className="w-10 h-10" />
+                 </div>
+                 <h3 className="font-bold text-xl dark:text-white mb-2">Tasdiqlang</h3>
+                 <p className="text-gray-500 dark:text-gray-400 text-sm whitespace-pre-wrap leading-relaxed">{confirmModal.title}</p>
+              </div>
+              <div className="p-4 flex justify-center gap-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+                 <button onClick={() => setConfirmModal(null)} className="px-5 py-3 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 font-bold dark:text-gray-200 hover:bg-gray-100 transition-colors w-full shadow-sm">Orqaga</button>
+                 <button onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }} className="bg-red-500 text-white px-5 py-3 rounded-xl font-bold hover:bg-red-600 transition-colors w-full shadow-lg shadow-red-500/30">Ha, o'chirish</button>
+              </div>
+           </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Boshqaruv Paneli</h1>
@@ -631,6 +680,7 @@ export default function AdminPanel() {
                         <option value="Notiqlik">Notiqlik</option>
                         <option value="Time Management">Time Management</option>
                         <option value="Imij">Imij (Shaxsiy Brend)</option>
+                        <option value="Volontyorlik">Volontyorlik</option>
                         <option value="Boshqa">Boshqa</option>
                       </select>
                     </div>

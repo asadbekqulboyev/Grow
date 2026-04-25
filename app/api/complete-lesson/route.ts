@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       .select('id')
       .eq('user_id', user.id)
       .eq('lesson_id', lesson_id)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       return NextResponse.json({ message: 'Bu dars allaqachon tugallangan', already_completed: true });
@@ -43,12 +43,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: progressError.message }, { status: 500 });
     }
 
-    // Award coins for completing a lesson (10 coins per lesson)
+    // Calculate total quiz coins for this lesson
+    const { data: lessonQuizzes } = await supabase
+      .from('quizzes')
+      .select('reward_coins')
+      .eq('lesson_id', lesson_id);
+
+    let totalQuizCoins = 0;
+    if (lessonQuizzes && lessonQuizzes.length > 0) {
+      totalQuizCoins = lessonQuizzes.reduce((sum, q) => sum + (q.reward_coins || 10), 0);
+    }
+
+    // Award overall coins (Lesson itself + all the quizzes in it)
     const LESSON_COINS = 10;
+    const totalReward = LESSON_COINS + totalQuizCoins;
+    
     await supabase.from('user_coins').insert({
       user_id: user.id,
-      amount: LESSON_COINS,
-      reason: 'Dars tugallandi',
+      amount: totalReward,
+      reason: totalQuizCoins > 0 ? `Dars va sinov testi a'lo darajada yakunlandi` : `Dars tugallandi`,
       course_id,
     });
 
@@ -99,7 +112,7 @@ export async function POST(request: Request) {
         .select('id')
         .eq('user_id', user.id)
         .eq('course_id', course_id)
-        .single();
+        .maybeSingle();
 
       if (!existingCert) {
         await supabase.from('certificates').insert({

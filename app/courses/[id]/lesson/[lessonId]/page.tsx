@@ -56,6 +56,7 @@ export default function LessonPage() {
   const [testMode, setTestMode] = useState(false);
   const [testAnswers, setTestAnswers] = useState<{[key: string]: number}>({});
   const [testResult, setTestResult] = useState<'passed'|'failed'|null>(null);
+  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
 
   useEffect(() => {
     if (!courseId || !lessonId) return;
@@ -215,53 +216,79 @@ export default function LessonPage() {
                 <h3 className="text-xl font-bold text-red-700 dark:text-red-400 mb-2">Afsuski, to'liq o'zlashtirilmadi</h3>
                 <p className="text-red-600/80 dark:text-red-300/80 mb-6 font-medium">Darsni muvaffaqiyatli yakunlash va tangalarni yig'ish uchun barcha savollarga to'g'ri javob berishingiz kerak. Yana bir bor urinib ko'ring yoki videoni qayta ko'ring.</p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
-                  <button onClick={() => { setTestMode(false); setTestResult(null); setTestAnswers({}); }} className="px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                  <button onClick={() => { setTestMode(false); setTestResult(null); setTestAnswers({}); setCurrentQuizIndex(0); }} className="px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
                     Videoni qayta ko'rish
                   </button>
-                  <button onClick={() => { setTestResult(null); setTestAnswers({}); }} className="px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-500/30">
+                  <button onClick={() => { setTestResult(null); setTestAnswers({}); setCurrentQuizIndex(0); }} className="px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-500/30">
                     Qayta urinish
                   </button>
                 </div>
               </div>
             )}
 
-            {testResult !== 'failed' && (
-              <div className="space-y-8">
-                {quizzes.map((q, idx) => (
-                  <div key={q.id} className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-colors duration-300">
-                    <p className="font-bold text-gray-900 dark:text-white mb-5 text-lg">
-                      {idx + 1}. {q.question}
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {(q.options as string[]).map((opt, oIdx) => (
-                        <label 
-                          key={oIdx} 
-                          className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all border-2 ${
-                            testAnswers[q.id] === oIdx 
-                              ? 'border-[#2D5A27] bg-[#2D5A27]/5 dark:border-[#A8E6CF] dark:bg-[#A8E6CF]/10 shadow-sm' 
-                              : 'border-transparent bg-white dark:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-700 shadow-sm'
-                          }`}
-                        >
-                          <input 
-                            type="radio" 
-                            name={`quiz_${q.id}`} 
-                            checked={testAnswers[q.id] === oIdx}
-                            onChange={() => setTestAnswers(prev => ({...prev, [q.id]: oIdx}))}
-                            className="w-5 h-5 text-[#2D5A27] dark:text-[#A8E6CF] focus:ring-[#2D5A27] dark:focus:ring-[#A8E6CF]"
-                          />
-                          <span className="text-gray-700 dark:text-gray-300 font-medium">{opt}</span>
-                        </label>
-                      ))}
+            {testResult !== 'failed' && quizzes.length > 0 && (
+              <div className="space-y-8 animate-in slide-in-from-right duration-300">
+                {(() => {
+                  const q = quizzes[currentQuizIndex];
+                  const idx = currentQuizIndex;
+                  return (
+                    <div key={q.id} className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-gray-100 dark:border-gray-800 transition-colors duration-300">
+                      <div className="flex justify-between items-center mb-6">
+                         <span className="text-sm font-bold text-gray-500 bg-gray-200 dark:bg-gray-700 px-4 py-1.5 rounded-full text-center">
+                            Savol {idx + 1} / {quizzes.length}
+                         </span>
+                         <span className="text-sm font-bold text-yellow-600 bg-yellow-100/80 px-4 py-1.5 rounded-full text-center shadow-sm">
+                            +{q.reward_coins || 10} tanga
+                         </span>
+                      </div>
+                      <p className="font-bold text-gray-900 dark:text-white mb-6 text-xl md:text-2xl leading-relaxed">
+                        {q.question}
+                      </p>
+                      <div className="grid grid-cols-1 gap-4">
+                        {(q.options as string[]).map((opt, oIdx) => (
+                          <label 
+                            key={oIdx} 
+                            className={`flex items-center gap-4 p-5 rounded-2xl cursor-pointer transition-all border-2 select-none ${
+                              testAnswers[q.id] === oIdx 
+                                ? 'border-[#2D5A27] bg-[#2D5A27]/5 dark:border-[#A8E6CF] dark:bg-[#A8E6CF]/10 shadow-sm' 
+                                : 'border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-600 shadow-sm'
+                            }`}
+                          >
+                            <input 
+                              type="radio" 
+                              name={`quiz_${q.id}`} 
+                              checked={testAnswers[q.id] === oIdx}
+                              onChange={() => setTestAnswers(prev => ({...prev, [q.id]: oIdx}))}
+                              className="w-5 h-5 text-[#2D5A27] dark:text-[#A8E6CF] focus:ring-[#2D5A27] dark:focus:ring-[#A8E6CF]"
+                            />
+                            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 ${testAnswers[q.id] === oIdx ? 'border-[#2D5A27] dark:border-[#A8E6CF]' : 'border-gray-300 dark:border-gray-600'}`}>
+                               <span className={`text-sm font-bold ${testAnswers[q.id] === oIdx ? 'text-[#2D5A27] dark:text-[#A8E6CF]' : 'text-gray-400'}`}>{String.fromCharCode(65 + oIdx)}</span>
+                            </div>
+                            <span className="text-gray-700 dark:text-gray-200 font-medium text-[17px]">{opt}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })()}
 
                 <button 
-                  onClick={handleSubmitTest}
-                  disabled={Object.keys(testAnswers).length !== quizzes.length}
-                  className="w-full py-4 bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] shadow-lg shadow-green-500/20 text-white rounded-xl font-bold text-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => {
+                     window.scrollTo({ top: 300, behavior: 'smooth' });
+                     if (currentQuizIndex < quizzes.length - 1) {
+                         setCurrentQuizIndex(prev => prev + 1);
+                     } else {
+                         handleSubmitTest();
+                     }
+                  }}
+                  disabled={testAnswers[quizzes[currentQuizIndex].id] === undefined}
+                  className="w-full py-5 bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] shadow-xl shadow-green-500/20 text-white rounded-2xl font-bold text-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                 >
-                  Javoblarni tekshirib yuborish
+                  {currentQuizIndex < quizzes.length - 1 ? (
+                     <>Keyingi savol <ArrowRight className="w-5 h-5 ml-1" /></>
+                  ) : (
+                     <>Javoblarni yuborish <CheckCircle className="w-5 h-5 ml-1" /></>
+                  )}
                 </button>
               </div>
             )}
