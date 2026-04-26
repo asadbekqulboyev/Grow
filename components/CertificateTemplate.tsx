@@ -65,6 +65,7 @@ export const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplat
                    src={`https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}/verify/${id}&choe=UTF-8`}
                    alt="QR"
                    className="w-full h-full object-contain"
+                   crossOrigin="anonymous"
                  />
               </div>
            </div>

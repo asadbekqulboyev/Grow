@@ -26,14 +26,14 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
     try {
       const element = certRef.current;
       
-      // html-to-image safely renders the element bypassing html2canvas css-parser errors like 'oklab'
+      // html-to-image options to handle CORS and quality
       const imgData = await htmlToImage.toPng(element, {
-        quality: 1,
+        quality: 0.95,
         pixelRatio: 2,
+        cacheBust: true, // CORS xatoliklarini oldini olish uchun
         backgroundColor: '#FFFFFF',
       });
       
-      // CertificateTemplate is fixed at 1000x707 size (A4 landscape ratio)
       const width = 1000;
       const height = 707;
 
@@ -44,11 +44,11 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
       });
       
       pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-      pdf.save(`Sertifikat_${certData.courseName.replace(/\s+/g, '_')}_${certData.id}.pdf`);
+      pdf.save(`Sertifikat_${certData.courseName.replace(/\s+/g, '_')}_${certData.id.substring(0, 8)}.pdf`);
       
-    } catch (error) {
-      console.error('Failed to generate PDF', error);
-      alert('Sertifikat yaratishda xato yuz berdi.');
+    } catch (error: any) {
+      console.error('PDF Generation Detail Error:', error);
+      alert(`Sertifikatni yuklab olishda xato: ${error.message || 'Noma\'lum xatolik'}`);
     } finally {
       setIsGenerating(false);
     }
@@ -72,7 +72,8 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
           left: '-9999px',
           zIndex: -50,
           opacity: 0,
-          pointerEvents: 'none'
+          pointerEvents: 'none',
+          visibility: 'hidden'
         }}
       >
         <CertificateTemplate
