@@ -1,10 +1,11 @@
-import { Inter } from 'next/font/google';
+import { Inter, Montserrat } from 'next/font/google';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ThemeProvider } from '@/components/theme-provider';
 import Preloader from '@/components/Preloader';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const montserrat = Montserrat({ subsets: ['latin'], variable: '--font-montserrat' });
 
 export const metadata = {
   title: 'Grow.UZ - Soft Skills Academy',
@@ -13,7 +14,7 @@ export const metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="uz" className={`${inter.variable} suppressHydrationWarning`} suppressHydrationWarning>
+    <html lang="uz" className={`${inter.variable} ${montserrat.variable} suppressHydrationWarning`} suppressHydrationWarning>
       <body className="font-sans bg-[#F3F4F6] text-[#1F2937] dark:bg-[#111827] dark:text-[#E5E7EB] antialiased min-h-screen flex transition-colors duration-300" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Preloader />

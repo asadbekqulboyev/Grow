@@ -1,5 +1,4 @@
 import React, { forwardRef } from 'react';
-import { QrCode } from 'lucide-react';
 
 interface CertificateTemplateProps {
   id: string;
@@ -8,63 +7,68 @@ interface CertificateTemplateProps {
   date: string;
 }
 
-// Kurs nomiga qarab fon rasmi tanlanadi
-const backgrounds: Record<string, string> = {
-  'Shar dekoratsiyasi': '/certificates/shar_sertficate.png',
-  'SMM': '/certificates/moliyaviy_savodxonlik.png', // SMM uchun hozircha shu, yoki boshqa rasm
-  'Time Management': '/certificates/time_management.png',
-  'Vaqt boshqaruvi': '/certificates/time_management.png',
-  'Notiqlik': '/certificates/notiqlik sertifikat.png',
-  'Volontyorlik': '/certificates/volontyorlik sertifikat.png',
-  'Imij': '/certificates/Imidj sertifikat.png',
-  'Imij (Shaxsiy Brend)': '/certificates/Imidj sertifikat.png',
-  'default': '/certificates/moliyaviy_savodxonlik.png' 
-};
-
 export const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplateProps>(
   ({ id, studentName, courseName, date }, ref) => {
-    
-    const bgImage = backgrounds[courseName] || backgrounds['default'];
-
     return (
       <div
         ref={ref}
-        style={{ width: '1000px', height: '707px', backgroundColor: 'white' }}
-        className="relative flex overflow-hidden box-border"
+        style={{ 
+          width: '1000px', 
+          height: '707px', 
+          backgroundColor: 'white',
+          backgroundImage: 'url("/certificates/moliyaviy_savodxonlik.png")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          fontFamily: "var(--font-montserrat), sans-serif"
+        }}
+        className="relative flex flex-col items-center overflow-hidden box-border"
       >
-        {/* Fon rasmi */}
-        <img 
-          src={bgImage} 
-          alt="Certificate Background" 
-          className="absolute inset-0 w-full h-full object-cover z-0" 
-          crossOrigin="anonymous" /* rasm cross-origin blokirovka bo'lmasligi uchun */
-        />
+        {/* Title: SERTIFIKAT - Montserrat Bold, 100pt */}
+        <div className="mt-[80px]">
+           <h1 className="text-[80px] font-bold text-[#228B22] uppercase tracking-[4px] leading-none">
+             SERTIFIKAT
+           </h1>
+        </div>
 
-        {/* O'quvchining ismi - Yashil rangda va Chiziq ustida, Chapdan */}
-        <div className="absolute z-10" style={{ top: '60.5%', left: '4%' }}>
-           <h4 className="text-[36px] font-black text-[#2D5A27] leading-none" style={{ 
-             fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", 
-             letterSpacing: '-0.5px'
-           }}>
+        {/* Text: ushbu sertifikat bilan taqdirlanadi - 24pt */}
+        <div className="mt-10">
+           <p className="text-[20px] font-medium text-[#228B22]/90 italic">
+             ushbu sertifikat bilan taqdirlanadi
+           </p>
+        </div>
+
+        {/* Student Name - Montserrat Bold, 38pt (approx 50px) */}
+        <div className="mt-8 border-b-2 border-[#228B22] px-12 min-w-[400px] text-center">
+           <h2 className="text-[42px] font-bold text-[#228B22] pb-1 uppercase">
              {studentName}
-           </h4>
+           </h2>
         </div>
 
-        {/* ID va Sana QR kod bilan - Dinamik QR-kod */}
-        <div className="absolute z-10 flex flex-col items-center opacity-85" style={{ bottom: '45px', right: '55px' }}>
-          <div className="w-[85px] h-[85px] bg-white p-1 shadow-md rounded-lg flex items-center justify-center border border-gray-100 overflow-hidden">
-            <img 
-              src={`https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}/verify/${id}&choe=UTF-8`}
-              alt="QR Verification"
-              className="w-full h-full object-contain"
-              crossOrigin="anonymous"
-            />
-          </div>
-          <div className="mt-2 text-right bg-white/40 backdrop-blur-[2px] px-2 py-0.5 rounded text-[8px] font-mono font-bold text-gray-700">
-            ID: {id} | {date}
-          </div>
+        {/* Course Name - Montserrat Bold, 50pt */}
+        <div className="mt-8">
+           <h3 className="text-[42px] font-bold text-[#228B22] uppercase tracking-wider">
+             {courseName}
+           </h3>
         </div>
 
+        {/* Footer Area: Date and QR/Stamp */}
+        <div className="absolute bottom-12 left-16 right-16 flex justify-between items-end">
+           <div className="text-left">
+              <p className="text-[18px] font-bold text-[#228B22]">SANA: {date}</p>
+              <p className="text-[14px] font-medium text-[#228B22]/70 font-mono mt-1">ID: {id}</p>
+           </div>
+           
+           {/* Dynamic QR Code */}
+           <div className="flex flex-col items-center">
+              <div className="w-20 h-20 bg-white/80 p-1 rounded-lg border border-[#228B22]/20 shadow-sm overflow-hidden flex items-center justify-center">
+                 <img 
+                   src={`https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}/verify/${id}&choe=UTF-8`}
+                   alt="QR"
+                   className="w-full h-full object-contain"
+                 />
+              </div>
+           </div>
+        </div>
       </div>
     );
   }
