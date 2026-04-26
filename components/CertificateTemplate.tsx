@@ -40,29 +40,28 @@ export const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplat
           crossOrigin="anonymous" /* rasm cross-origin blokirovka bo'lmasligi uchun */
         />
 
-        {/* O'quvchining ismi - Premium dizayn stili */}
-        <div className="absolute z-10" style={{ top: '60.8%', left: '11.8%', width: '70%' }}>
-           <h4 className="text-[34px] font-black text-[#1F1F1F] leading-none" style={{ 
-             fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif", 
-             textShadow: '0.4px 0.4px 0px rgba(255,255,255,0.7)',
-             letterSpacing: '0.5px'
+        {/* O'quvchining ismi - Yashil rangda va Chiziq ustida, Chapdan */}
+        <div className="absolute z-10" style={{ top: '60.5%', left: '4%' }}>
+           <h4 className="text-[36px] font-black text-[#2D5A27] leading-none" style={{ 
+             fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", 
+             letterSpacing: '-0.5px'
            }}>
              {studentName}
            </h4>
         </div>
 
-        {/* ID va Sana QR kod bilan - Professional burchak */}
-        <div className="absolute z-10 flex flex-col items-center opacity-90" style={{ bottom: '48px', left: '65px' }}>
-          <div className="w-[84px] h-[84px] bg-white/95 p-2 shadow-md rounded-xl flex items-center justify-center border border-gray-100">
-            <QrCode className="w-full h-full text-[#1a3a16]" strokeWidth={1.2} />
+        {/* ID va Sana QR kod bilan - Dinamik QR-kod */}
+        <div className="absolute z-10 flex flex-col items-center opacity-85" style={{ bottom: '45px', right: '55px' }}>
+          <div className="w-[85px] h-[85px] bg-white p-1 shadow-md rounded-lg flex items-center justify-center border border-gray-100 overflow-hidden">
+            <img 
+              src={`https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}/verify/${id}&choe=UTF-8`}
+              alt="QR Verification"
+              className="w-full h-full object-contain"
+              crossOrigin="anonymous"
+            />
           </div>
-          <div className="mt-2 text-center bg-white/80 backdrop-blur-sm px-3 py-1 rounded-lg border border-white/50 shadow-sm">
-            <p className="text-[9px] text-[#2d4a22] font-mono leading-tight font-bold tracking-tighter">
-              CERT ID: <span className="text-black">{id}</span>
-            </p>
-            <p className="text-[9px] text-[#2d4a22] font-mono leading-tight font-bold tracking-tighter">
-              ISSUED: <span className="text-black">{date}</span>
-            </p>
+          <div className="mt-2 text-right bg-white/40 backdrop-blur-[2px] px-2 py-0.5 rounded text-[8px] font-mono font-bold text-gray-700">
+            ID: {id} | {date}
           </div>
         </div>
 
