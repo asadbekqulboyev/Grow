@@ -134,6 +134,7 @@ export async function POST(request: Request) {
           course_id,
           student_name: studentName,
           course_name: courseData?.title || 'Noma\'lum kurs',
+          certificate_url: '', // Add empty string to satisfy NOT NULL constraint if it exists
         });
       }
     }

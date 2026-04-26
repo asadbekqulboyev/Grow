@@ -119,7 +119,7 @@ export default function CoursesPage() {
             />
           </div>
           
-          <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 scrollbar-hide py-1">
+          <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 no-scrollbar py-1">
             {categories.map((cat) => (
               <button
                 key={cat}
