@@ -40,25 +40,30 @@ export const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplat
           crossOrigin="anonymous" /* rasm cross-origin blokirovka bo'lmasligi uchun */
         />
 
-        {/* O'quvchining ismi - Chiziqning boshidan boshlanadi */}
-        <div className="absolute z-10 w-full" style={{ top: '61.5%', left: '11.5%' }}>
-           <h4 className="text-[34px] sm:text-[38px] font-bold text-[#1a1a1a] tracking-normal" style={{ 
-             fontFamily: "'Times New Roman', serif", 
-             textShadow: '0.5px 0.5px 0px rgba(255,255,255,0.8)',
-             letterSpacing: '1px'
+        {/* O'quvchining ismi - Premium dizayn stili */}
+        <div className="absolute z-10" style={{ top: '60.8%', left: '11.8%', width: '70%' }}>
+           <h4 className="text-[34px] font-black text-[#1F1F1F] leading-none" style={{ 
+             fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif", 
+             textShadow: '0.4px 0.4px 0px rgba(255,255,255,0.7)',
+             letterSpacing: '0.5px'
            }}>
              {studentName}
            </h4>
         </div>
 
-        {/* ID va Sana QR kod bilan pastki chap burchakda yoziladi */}
-        <div className="absolute z-10 flex flex-col items-center" style={{ bottom: '45px', left: '60px' }}>
-          <div className="w-20 h-20 bg-white border border-gray-200 p-1.5 shadow-sm rounded-lg flex items-center justify-center">
-            <QrCode className="w-[68px] h-[68px] text-[#2D5A27]" strokeWidth={1.5} />
+        {/* ID va Sana QR kod bilan - Professional burchak */}
+        <div className="absolute z-10 flex flex-col items-center opacity-90" style={{ bottom: '48px', left: '65px' }}>
+          <div className="w-[84px] h-[84px] bg-white/95 p-2 shadow-md rounded-xl flex items-center justify-center border border-gray-100">
+            <QrCode className="w-full h-full text-[#1a3a16]" strokeWidth={1.2} />
           </div>
-          <p className="text-[10px] text-gray-700 mt-1.5 font-mono tracking-widest text-center font-bold bg-white/70 px-2 py-0.5 rounded">
-            ID: {id} <br/> DATA: {date}
-          </p>
+          <div className="mt-2 text-center bg-white/80 backdrop-blur-sm px-3 py-1 rounded-lg border border-white/50 shadow-sm">
+            <p className="text-[9px] text-[#2d4a22] font-mono leading-tight font-bold tracking-tighter">
+              CERT ID: <span className="text-black">{id}</span>
+            </p>
+            <p className="text-[9px] text-[#2d4a22] font-mono leading-tight font-bold tracking-tighter">
+              ISSUED: <span className="text-black">{date}</span>
+            </p>
+          </div>
         </div>
 
       </div>
