@@ -40,10 +40,14 @@ export const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplat
           crossOrigin="anonymous" /* rasm cross-origin blokirovka bo'lmasligi uchun */
         />
 
-        {/* O'quvchining ismi - Markazlashtirilgan */}
-        <div className="absolute z-10 w-full flex justify-center" style={{ top: '56%' }}>
-           <h4 className="text-[44px] font-black text-[#1F2937] tracking-tight" style={{ fontFamily: "'Times New Roman', serif", textShadow: '1px 1px 0px rgba(255,255,255,0.5)' }}>
-             {studentName.toUpperCase()}
+        {/* O'quvchining ismi - Chiziqning boshidan boshlanadi */}
+        <div className="absolute z-10 w-full" style={{ top: '61.5%', left: '11.5%' }}>
+           <h4 className="text-[34px] sm:text-[38px] font-bold text-[#1a1a1a] tracking-normal" style={{ 
+             fontFamily: "'Times New Roman', serif", 
+             textShadow: '0.5px 0.5px 0px rgba(255,255,255,0.8)',
+             letterSpacing: '1px'
+           }}>
+             {studentName}
            </h4>
         </div>
 
