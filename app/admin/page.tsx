@@ -42,6 +42,7 @@ export default function AdminPanel() {
     title: '', description: '', category: '', level: '', reward_coins: 100, image_url: '', author: ''
   });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,6 +68,41 @@ export default function AdminPanel() {
       toast.error("Rasm yuklashda xatolik. Supabase'da 'course-images' nomli Public bucket borligiga ishonch hosil qiling.");
     } finally {
       setIsUploadingImage(false);
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Limit size if needed, e.g., 100MB
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("Video hajmi juda katta (maksimal 100MB).");
+      return;
+    }
+
+    setIsUploadingVideo(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('lesson-videos') // Foydalanuvchi bu bucketni Supabase'da ochishi kerak
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('lesson-videos')
+        .getPublicUrl(fileName);
+
+      setLessonForm(prev => ({ ...prev, video_url: publicUrl }));
+      toast.success("Video muvaffaqiyatli yuklandi!");
+    } catch (err: any) {
+      console.error("Video upload error:", err);
+      toast.error("Video yuklashda xatolik. Supabase'da 'lesson-videos' nomli PUBLIC bucket borligiga ishonch hosil qiling.");
+    } finally {
+      setIsUploadingVideo(false);
     }
   };
 
@@ -563,7 +599,13 @@ export default function AdminPanel() {
                     <td className="px-4 py-3 text-gray-500">{(lesson as any).courses?.title || 'Noma\'lum'}</td>
                     <td className="px-4 py-3">
                       {lesson.video_url ? (
-                        <img src={`https://img.youtube.com/vi/${getYouTubeId(lesson.video_url)}/mqdefault.jpg`} alt="" className="w-20 h-12 object-cover rounded-lg" />
+                        getYouTubeId(lesson.video_url) ? (
+                           <img src={`https://img.youtube.com/vi/${getYouTubeId(lesson.video_url)}/mqdefault.jpg`} alt="" className="w-20 h-12 object-cover rounded-lg" />
+                        ) : (
+                           <div className="w-20 h-12 bg-gray-800 rounded-lg flex items-center justify-center border border-gray-700">
+                              <Video className="w-5 h-5 text-green-500" />
+                           </div>
+                        )
                       ) : <div className="w-20 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center"><Video className="w-4 h-4 text-gray-400" /></div>}
                     </td>
                     <td className="px-4 py-3">
@@ -777,6 +819,7 @@ export default function AdminPanel() {
                     <div>
                       <label className="block text-sm font-medium mb-1 dark:text-gray-300">Turkum</label>
                       <select value={courseForm.category} onChange={e => setCourseForm({...courseForm, category: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]">
+                        <option value="Shar dekoratsiyasi">Shar dekoratsiyasi</option>
                         <option value="SMM">SMM</option>
                         <option value="Dasturlash">Dasturlash</option>
                         <option value="Dizayn">Dizayn</option>
@@ -851,18 +894,50 @@ export default function AdminPanel() {
                  <div>
                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Qisqacha Tavsif</label>
                    <textarea rows={2} value={lessonForm.description} onChange={e => setLessonForm({...lessonForm, description: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
-                 </div>
-                 <div>
-                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">YouTube Video Havolasi</label>
-                    <input type="text" value={lessonForm.video_url} onChange={e => setLessonForm({...lessonForm, video_url: e.target.value})} placeholder="https://www.youtube.com/watch?v=... yoki https://youtu.be/..." className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
-                    {lessonForm.video_url && getYouTubeId(lessonForm.video_url) && (
-                      <div className="mt-3 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                        <img src={`https://img.youtube.com/vi/${getYouTubeId(lessonForm.video_url)}/hqdefault.jpg`} alt="Video preview" className="w-full h-40 object-cover" />
-                        <div className="p-2 bg-gray-50 dark:bg-gray-800 flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
-                          <Youtube className="w-4 h-4" /> Video topildi ✓
+                                   </div>
+                  <div>
+                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">Video Havolasi (YouTube yoki Direct URL)</label>
+                     <div className="flex flex-col gap-3">
+                        <div className="flex gap-2 items-center">
+                          <label className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl cursor-pointer transition-colors w-1/3 shrink-0 shadow-sm border border-gray-200 dark:border-gray-700">
+                            {isUploadingVideo ? <Loader2 className="w-5 h-5 animate-spin text-green-500" /> : <Upload className="w-5 h-5 text-green-500" />}
+                            <span className="text-sm font-bold dark:text-gray-300">{isUploadingVideo ? 'Yuklash...' : 'Fayl'}</span>
+                            <input type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} disabled={isUploadingVideo} />
+                          </label>
+                          <span className="text-xs text-gray-400">yoki</span>
+                          <input 
+                            type="text" 
+                            value={lessonForm.video_url} 
+                            onChange={e => setLessonForm({...lessonForm, video_url: e.target.value})} 
+                            placeholder="URL yokie /videos/..." 
+                            className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF] font-medium" 
+                          />
                         </div>
-                      </div>
-                    )}
+
+                        {lessonForm.video_url && (
+                          <div className="mt-1 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                             {getYouTubeId(lessonForm.video_url) ? (
+                                <>
+                                  <img src={`https://img.youtube.com/vi/${getYouTubeId(lessonForm.video_url)}/hqdefault.jpg`} alt="Video preview" className="w-full h-40 object-cover" />
+                                  <div className="p-2.5 flex items-center gap-2 text-xs text-green-600 dark:text-green-400 font-bold">
+                                    <Youtube className="w-4 h-4" /> YouTube Video aniqlandi ✓
+                                  </div>
+                                </>
+                             ) : (
+                                <div className="p-4 flex items-center gap-3">
+                                   <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-xl flex items-center justify-center shrink-0">
+                                      <Video className="w-6 h-6 text-green-600 dark:text-green-400" />
+                                   </div>
+                                   <div className="min-w-0 flex-1">
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">Direct Video aniqlandi</div>
+                                      <div className="text-sm font-bold dark:text-white truncate">{lessonForm.video_url}</div>
+                                   </div>
+                                </div>
+                             )}
+                          </div>
+                        )}
+                        <p className="text-[10px] text-gray-400 italic">Maslahat: Local saqlash uchun /videos/kurs-nomi/dars1.mp4 shaklida yozing.</p>
+                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1 dark:text-gray-300">Dars Matni / Qo'shimcha Eslatmalar</label>

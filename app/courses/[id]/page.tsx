@@ -171,7 +171,7 @@ export default function CourseDetailsPage() {
       <div className="max-w-5xl mx-auto w-full px-4 lg:px-8 -mt-6 md:-mt-8 z-30 pb-24 flex flex-col lg:flex-row gap-6 md:gap-8">
         
         {/* Left Column: Lessons */}
-        <div className="flex-1 w-full">
+        <div className="flex-1 min-w-0 w-full">
           <div className="bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800">
             <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 flex items-center justify-between md:justify-start">
               Darslar ro&apos;yxati
@@ -201,7 +201,7 @@ export default function CourseDetailsPage() {
                         {index === 0 ? <PlayCircle className="w-4 h-4 md:w-5 md:h-5 fill-current" /> : <Lock className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                       </div>
                       
-                      <div className="overflow-hidden">
+                      <div className="overflow-hidden min-w-0">
                         <h4 className="text-sm md:text-base font-bold text-gray-900 dark:text-gray-100 group-hover:text-[#2D5A27] dark:group-hover:text-[#A8E6CF] transition-colors truncate">
                           {lesson.order_index}. {lesson.title}
                         </h4>

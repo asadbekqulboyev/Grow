@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, ArrowRight, Clock, PlayCircle, CheckCircle, BookOpen, Award, Loader2, PartyPopper, HelpCircle, XCircle } from 'lucide-react';
+import { DownloadCertificateBtn } from '@/components/DownloadCertificateBtn';
 import Link from 'next/link';
 
 interface Lesson {
@@ -36,6 +37,12 @@ function getYouTubeEmbedUrl(url: string): string | null {
   return null;
 }
 
+function isDirectVideo(url: string): boolean {
+  if (!url) return false;
+  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
+  return videoExtensions.some(ext => url.toLowerCase().includes(ext)) || url.startsWith('/uploads/') || url.startsWith('/videos/');
+}
+
 export default function LessonPage() {
   const params = useParams();
   const router = useRouter();
@@ -52,6 +59,12 @@ export default function LessonPage() {
   const [completionResult, setCompletionResult] = useState<any>(null);
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
   
+  // Certificate specific states
+  const [certName, setCertName] = useState("");
+  const [certUpdating, setCertUpdating] = useState(false);
+  const [certSaved, setCertSaved] = useState(false);
+  const [finalGeneratedCertCode, setFinalGeneratedCertCode] = useState<string | null>(null);
+
   // Test State
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [testMode, setTestMode] = useState(false);
@@ -173,6 +186,31 @@ export default function LessonPage() {
     }
   };
 
+  const handleUpdateCertName = async () => {
+    if (certName.trim().length < 3) return;
+    setCertUpdating(true);
+    try {
+      const res = await fetch('/api/update-certificate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course_id: courseId, student_name: certName.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCertSaved(true);
+        if (data.certificate?.cert_code) {
+           setFinalGeneratedCertCode(data.certificate.cert_code);
+        }
+      } else {
+        alert("Xatolik: " + data.error);
+      }
+    } catch (err) {
+      alert("Sertifikatni saqlashda xatolik");
+    } finally {
+      setCertUpdating(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 min-h-screen bg-[#F3F4F6] dark:bg-[#111827] flex items-center justify-center">
@@ -205,7 +243,7 @@ export default function LessonPage() {
           <button onClick={() => router.push(`/courses/${courseId}`)} className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors shrink-0">
             <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate">{course.title}</p>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{lesson.order_index}. {lesson.title}</h2>
           </div>
@@ -254,9 +292,6 @@ export default function LessonPage() {
                       <div className="flex justify-between items-center mb-4 sm:mb-5">
                          <span className="text-xs sm:text-sm font-bold text-gray-500 bg-gray-200 dark:bg-gray-700 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-center">
                             Savol {idx + 1} / {quizzes.length}
-                         </span>
-                         <span className="text-xs sm:text-sm font-bold text-yellow-600 bg-yellow-100/80 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-center shadow-sm">
-                            +{q.reward_coins || 10} tanga
                          </span>
                       </div>
                       <p className="font-bold text-gray-900 dark:text-white mb-4 sm:mb-5 text-base sm:text-lg md:text-xl leading-snug">
@@ -332,6 +367,16 @@ export default function LessonPage() {
               allowFullScreen
               sandbox="allow-scripts allow-same-origin allow-presentation"
             />
+          ) : lesson.video_url && isDirectVideo(lesson.video_url) ? (
+            <video
+              src={lesson.video_url}
+              controls
+              className="w-full h-full absolute inset-0 bg-black"
+              controlsList="nodownload"
+              playsInline
+            >
+              Sizning brauzeringiz videoni qo'llab-quvvatlamaydi.
+            </video>
           ) : (
             <div className="w-full h-full absolute inset-0 flex items-center justify-center text-gray-500">
               <PlayCircle className="w-16 h-16 opacity-30" />
@@ -363,15 +408,81 @@ export default function LessonPage() {
         {!testMode && (
           <div className="mb-6">
             {completionResult?.course_completed ? (
-              <div className="bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] rounded-3xl p-6 text-white text-center shadow-lg">
+              <div className="bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] rounded-3xl p-6 text-white text-center shadow-lg animate-in fade-in zoom-in duration-500">
                 <PartyPopper className="w-12 h-12 mx-auto mb-3 text-yellow-300" />
-                <h3 className="text-xl font-bold mb-2">🎉 Tabriklaymiz!</h3>
-                <p className="text-sm text-white/80 mb-1">Siz kursni to&apos;liq tugatdingiz!</p>
-                <p className="text-sm font-bold text-yellow-300">+{completionResult.bonus_coins} bonus tanga qo&apos;lga kiritildi</p>
-                <p className="text-xs text-white/60 mt-2">Sertifikat avtomatik yaratildi — Profilga o&apos;ting</p>
-                <Link href="/profile" className="inline-block mt-4 px-6 py-2.5 bg-white text-[#2D5A27] rounded-xl font-bold text-sm hover:bg-gray-100 transition-colors">
-                  <Award className="w-4 h-4 inline mr-1" /> Sertifikatni ko&apos;rish
-                </Link>
+                <h3 className="text-2xl font-black mb-2 uppercase tracking-tight">Tabriklaymiz!</h3>
+                <p className="text-white/90 mb-1 font-medium">Siz kursni to&apos;liq tamomladingiz!</p>
+                <p className="font-bold text-yellow-300 mb-6 bg-black/20 p-2 rounded-xl inline-block max-w-max mx-auto shadow-inner">
+                  +{completionResult.bonus_coins} bonus tanga qo&apos;lga kiritildi
+                </p>
+
+                {/* MODAL OYNA ISHLATAMIZ */}
+                {!certSaved && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative animate-in zoom-in-95 duration-300">
+                      
+                      <div className="text-center mb-6">
+                         <div className="w-16 h-16 bg-[#2D5A27]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Award className="w-8 h-8 text-[#2D5A27]" />
+                         </div>
+                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Sertifikat uchun ma&apos;lumot</h3>
+                         <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+                           Sertifikat yuziga muhrlanadigan To'liq ism familiya va sharifingizni aniq xatosiz kiriting:
+                         </p>
+                      </div>
+
+                      <div className="space-y-4 text-left">
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">F.I.SH (To&apos;liq ismingiz)</label>
+                          <input 
+                            type="text" 
+                            placeholder="G'aniyev Alisher Valiyevich" 
+                            value={certName}
+                            onChange={(e) => setCertName(e.target.value)}
+                            className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-[#2D5A27] focus:bg-white dark:focus:border-[#A8E6CF] transition-all font-bold text-lg"
+                          />
+                        </div>
+
+                        <button 
+                          onClick={handleUpdateCertName} 
+                          disabled={certUpdating || certName.trim().length < 5}
+                          className="w-full py-4 bg-[#2D5A27] text-white rounded-xl font-bold uppercase text-sm tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1e3c1a] transition-colors flex items-center justify-center gap-2 shadow-lg mt-2"
+                        >
+                          {certUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+                          {certUpdating ? "Saqlanmoqda..." : "Tasdiqlash va Sertifikatni tayyorlash"}
+                        </button>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
+
+                {certSaved && (
+                   <div className="text-center py-4 animate-in zoom-in slide-in-from-bottom-4 duration-500">
+                      <CheckCircle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+                      <h4 className="font-bold text-xl mb-1 text-white">Hammasi tayyor!</h4>
+                      <p className="text-sm text-green-100 mb-6 font-medium">Sertifikatingiz sizning nomingizga maxsus yaratildi.</p>
+                      
+                      {(finalGeneratedCertCode || completionResult?.cert_code) && (
+                        <DownloadCertificateBtn 
+                          className="w-full sm:w-auto px-8 py-4 bg-yellow-400 text-yellow-900 rounded-xl font-black uppercase tracking-wide hover:bg-yellow-300 transition-transform active:scale-95 flex items-center justify-center gap-2 mx-auto shadow-xl shadow-yellow-500/20"
+                          certData={{
+                            id: (finalGeneratedCertCode || completionResult?.cert_code) as string,
+                            studentName: certName.trim(),
+                            courseName: course?.title || 'KURS',
+                            date: new Date().toLocaleDateString('uz-UZ'),
+                          }}
+                        >
+                          <Award className="w-5 h-5" />
+                          PDF FORMATDA YUKLAB OLISH
+                        </DownloadCertificateBtn>
+                      )}
+                      
+                      <Link href="/profile" className="block mt-4 text-sm text-green-100 hover:text-white font-medium underline underline-offset-4">
+                         Profil sahifasiga o&apos;tish
+                      </Link>
+                   </div>
+                )}
               </div>
             ) : isCompleted ? (
               <div className="bg-[#A8E6CF]/20 dark:bg-[#A8E6CF]/10 border-2 border-[#2D5A27]/20 dark:border-[#A8E6CF]/20 rounded-2xl p-5 flex items-center gap-4">

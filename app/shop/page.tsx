@@ -3,14 +3,106 @@
 import { ShoppingBag, Gift, Crown, Sparkles, Lock } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
-const shopItems = [
-  { id: 1, name: 'Premium Badge', description: 'Profilingizda maxsus nishon ko\'rsatiladi', price: 500, icon: Crown, color: 'from-amber-400 to-orange-500', available: false },
-  { id: 2, name: 'AI Mentor Pro', description: 'Cheksiz AI suhbat va shaxsiy maslahatlar', price: 1000, icon: Sparkles, color: 'from-purple-400 to-indigo-500', available: false },
-  { id: 3, name: 'Sertifikat Ramkasi', description: 'Sertifikatlaringiz uchun maxsus dizayn', price: 300, icon: Gift, color: 'from-pink-400 to-rose-500', available: false },
-  { id: 4, name: 'Maxsus Avatar', description: 'Profil rasmingiz uchun premium ramka', price: 200, icon: Crown, color: 'from-emerald-400 to-teal-500', available: false },
+import { createClient } from '@/lib/supabase/client';
+import { useState, useEffect } from 'react';
+
+const fallbackShopItems = [
+  { id: 1, name: 'Premium Badge', description: 'Profilingizda maxsus nishon ko\'rsatiladi', price: 500, icon_name: 'Crown', color: 'from-amber-400 to-orange-500', available: true },
+  { id: 2, name: 'AI Mentor Pro', description: 'Cheksiz AI suhbat va shaxsiy maslahatlar', price: 1000, icon_name: 'Sparkles', color: 'from-purple-400 to-indigo-500', available: true },
+  { id: 3, name: 'Sertifikat Ramkasi', description: 'Sertifikatlaringiz uchun maxsus dizayn', price: 300, icon_name: 'Gift', color: 'from-pink-400 to-rose-500', available: true },
+  { id: 4, name: 'Maxsus Avatar', description: 'Profil rasmingiz uchun premium ramka', price: 200, icon_name: 'Crown', color: 'from-emerald-400 to-teal-500', available: true },
 ];
 
+const iconMap: { [key: string]: any } = {
+  'Crown': Crown,
+  'Sparkles': Sparkles,
+  'Gift': Gift,
+  'Lock': Lock,
+  'ShoppingBag': ShoppingBag
+};
+
 export default function ShopPage() {
+  const [shopItems, setShopItems] = useState<any[]>([]);
+  const [balance, setBalance] = useState<number>(0);
+  const [purchasedNames, setPurchasedNames] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [purchasingId, setPurchasingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchShopData = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch shop items
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('shop_items')
+        .select('*')
+        .order('price', { ascending: true });
+
+      const { data: coinsData } = await supabase
+        .from('user_coins')
+        .select('amount, reason')
+        .eq('user_id', user.id);
+
+      if (isMounted) {
+        if (!itemsError && itemsData && itemsData.length > 0) {
+          setShopItems(itemsData);
+        } else {
+          setShopItems(fallbackShopItems);
+        }
+
+        if (coinsData) {
+          let total = 0;
+          const pNames = new Set<string>();
+
+          coinsData.forEach(c => {
+            total += c.amount;
+            if (c.reason.startsWith('Do\'kon: ')) {
+              pNames.add(c.reason.replace('Do\'kon: ', ''));
+            }
+          });
+
+          setBalance(total);
+          setPurchasedNames(pNames);
+        }
+        setLoading(false);
+      }
+    };
+
+    fetchShopData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const handlePurchase = async (item: any) => {
+    if (balance < item.price) {
+      alert("Xarid qilish uchun tangalaringiz yetarli emas!");
+      return;
+    }
+
+    setPurchasingId(item.id);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      const { error } = await supabase.from('user_coins').insert({
+        user_id: user.id,
+        amount: -item.price,
+        reason: `Do'kon: ${item.name}`
+      });
+
+      if (!error) {
+        setBalance(prev => prev - item.price);
+        setPurchasedNames(prev => new Set(prev).add(item.name));
+        alert(`${item.name} muvaffaqiyatli xarid qilindi!`);
+      } else {
+        alert("Xaridni amalga oshirishda xatolik yuz berdi.");
+      }
+    }
+    setPurchasingId(null);
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#F3F4F6] dark:bg-[#111827] transition-colors duration-300">
       {/* Header */}
@@ -25,8 +117,14 @@ export default function ShopPage() {
           <LanguageSwitcher />
           <div className="flex items-center gap-2 bg-[#F3F4F6] dark:bg-gray-800 px-4 py-2 rounded-full transition-colors duration-300">
             <span className="text-[10px] bg-yellow-400 w-5 h-5 rounded-full flex items-center justify-center font-bold text-white shadow-sm">💰</span>
-            <span className="font-bold text-sm text-[#1F2937] dark:text-gray-200 hidden sm:inline-block transition-colors">1,210 Tangalar</span>
-            <span className="font-bold text-sm text-[#1F2937] dark:text-gray-200 sm:hidden transition-colors">1,210</span>
+            {loading ? (
+              <span className="w-12 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse inline-block" />
+            ) : (
+              <>
+                <span className="font-bold text-sm text-[#1F2937] dark:text-gray-200 hidden sm:inline-block transition-colors">{balance.toLocaleString()} Tangalar</span>
+                <span className="font-bold text-sm text-[#1F2937] dark:text-gray-200 sm:hidden transition-colors">{balance.toLocaleString()}</span>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -39,9 +137,9 @@ export default function ShopPage() {
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-yellow-300/10 rounded-full mix-blend-overlay filter blur-[60px] animate-float-medium pointer-events-none"></div>
           
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-[#A8E6CF] text-xs font-bold mb-4 border border-white/10">
-              <Sparkles className="w-3.5 h-3.5" />
-              Tez kunda
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#A8E6CF]/20 text-[#A8E6CF] text-xs font-bold mb-4 border border-[#A8E6CF]/30 shadow-[0_0_15px_rgba(168,230,207,0.3)]">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              Do'kon ochildi!
             </div>
             <h1 className="text-xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-3">Tangalaringizni sarflang!</h1>
             <p className="text-[#A8E6CF] max-w-lg text-xs sm:text-sm md:text-base">
@@ -53,18 +151,28 @@ export default function ShopPage() {
         {/* Shop Items Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {shopItems.map((item) => {
-            const Icon = item.icon;
+            const Icon = iconMap[item.icon_name] || Gift;
+            const isPurchased = purchasedNames.has(item.name);
+            const isPurchasing = purchasingId === item.id;
+            
             return (
-              <div key={item.id} className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-[28px] overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col group hover:shadow-xl transition-all duration-300 relative">
+              <div key={item.id} className={`bg-white dark:bg-gray-900 rounded-2xl sm:rounded-[28px] overflow-hidden shadow-sm border ${isPurchased ? 'border-[#2D5A27]/50 dark:border-[#A8E6CF]/50 ring-2 ring-[#2D5A27]/20 dark:ring-[#A8E6CF]/20' : 'border-gray-100 dark:border-gray-800'} flex flex-col group hover:shadow-xl transition-all duration-300 relative`}>
                 {/* Locked overlay */}
-                <div className="absolute inset-0 bg-white/60 dark:bg-gray-900/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center rounded-[28px] opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Lock className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
-                  <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Tez kunda ochiladi</span>
-                </div>
+                {!item.available && (
+                  <div className="absolute inset-0 bg-white/60 dark:bg-gray-900/60 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center rounded-[28px] opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Lock className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-2" />
+                    <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Tez kunda ochiladi</span>
+                  </div>
+                )}
 
                 {/* Gradient top */}
                 <div className={`h-32 bg-gradient-to-br ${item.color} relative flex items-center justify-center`}>
                   <Icon className="w-12 h-12 text-white/80" />
+                  {isPurchased && (
+                    <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-full p-2">
+                       <span className="text-white font-bold text-xs">Olingan ✅</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Info */}
@@ -77,9 +185,23 @@ export default function ShopPage() {
                       <span className="text-[10px] bg-yellow-400 w-4 h-4 rounded-full flex items-center justify-center font-bold text-white">💰</span>
                       <span className="font-bold text-sm text-[#2D5A27] dark:text-[#A8E6CF]">{item.price}</span>
                     </div>
-                    <button disabled className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg sm:rounded-xl text-xs font-bold cursor-not-allowed">
-                      Sotib olish
-                    </button>
+                    {isPurchased ? (
+                      <button disabled className="px-4 py-2 bg-[#2D5A27]/10 dark:bg-[#A8E6CF]/10 text-[#2D5A27] dark:text-[#A8E6CF] rounded-lg sm:rounded-xl text-xs font-bold cursor-not-allowed border border-[#2D5A27]/20 dark:border-[#A8E6CF]/20">
+                        Faol ✅
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => handlePurchase(item)}
+                        disabled={isPurchasing || balance < item.price || !item.available}
+                        className={`px-4 py-2 rounded-lg sm:rounded-xl text-xs font-bold transition-all ${
+                          balance >= item.price && item.available
+                            ? 'bg-[#2D5A27] hover:bg-[#1a3816] text-white dark:bg-[#A8E6CF] dark:hover:bg-[#86d4b8] dark:text-[#111827] shadow-sm hover:shadow active:scale-[0.98]'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {isPurchasing ? 'Kuting...' : 'Sotib olish'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

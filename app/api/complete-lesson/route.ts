@@ -43,17 +43,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Progress save error: ' + progressError.message, details: progressError }, { status: 500 });
     }
 
-    // Calculate total quiz coins for this lesson
-    const { data: lessonQuizzes } = await supabase
-      .from('quizzes')
-      .select('reward_coins')
-      .eq('lesson_id', lesson_id);
-
-    let totalQuizCoins = 0;
-    if (lessonQuizzes && lessonQuizzes.length > 0) {
-      totalQuizCoins = lessonQuizzes.reduce((sum, q) => sum + (q.reward_coins || 10), 0);
-    }
-
     // Get specific lesson coins safely
     const { data: lessonData, error: lError } = await supabase
       .from('lessons')
@@ -63,14 +52,20 @@ export async function POST(request: Request) {
 
     if (lError) console.error("Could not fetch lesson coins, falling back heavily", lError);
 
-    // Award overall coins (Lesson itself + all the quizzes in it)
+    // Get number of quizzes to determine the reason text
+    const { count: quizzesCount } = await supabase
+      .from('quizzes')
+      .select('id', { count: 'exact', head: true })
+      .eq('lesson_id', lesson_id);
+
+    // Award overall coins (Only the Lesson itself, not adding extra quiz coins)
     const LESSON_COINS = lessonData?.reward_coins || 10;
-    const totalReward = LESSON_COINS + totalQuizCoins;
+    const totalReward = LESSON_COINS;
     
     const { error: coinsError } = await supabase.from('user_coins').insert({
       user_id: user.id,
       amount: totalReward,
-      reason: totalQuizCoins > 0 ? `Dars va sinov testi a'lo darajada yakunlandi` : `Dars tugallandi`,
+      reason: (quizzesCount && quizzesCount > 0) ? `Dars va sinov testi a'lo darajada yakunlandi` : `Dars tugallandi`,
       course_id,
     });
 
@@ -98,6 +93,7 @@ export async function POST(request: Request) {
     const completedCount = completedLessons?.length || 0;
     let courseCompleted = false;
     let bonusCoins = 0;
+    let finalCertCode: string | undefined = undefined;
 
     if (totalLessons > 0 && completedCount >= totalLessons) {
       courseCompleted = true;
@@ -109,30 +105,31 @@ export async function POST(request: Request) {
         .eq('id', course_id)
         .single();
 
-      // Award bonus coins for completing the course
-      bonusCoins = courseData?.reward_coins || 50;
-      await supabase.from('user_coins').insert({
-        user_id: user.id,
-        amount: bonusCoins,
-        reason: `Kurs tugallandi: ${courseData?.title}`,
-        course_id,
-      });
-
-      // Auto-generate certificate
-      const certCode = `GRW-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      const studentName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Talaba';
-
       // Check if certificate already exists for this course
       const { data: existingCert } = await supabase
         .from('certificates')
-        .select('id')
+        .select('id, cert_code')
         .eq('user_id', user.id)
         .eq('course_id', course_id)
         .maybeSingle();
 
+      finalCertCode = existingCert?.cert_code;
+
       if (!existingCert) {
+        // Award bonus coins for completing the course
+        bonusCoins = courseData?.reward_coins || 50;
+        await supabase.from('user_coins').insert({
+          user_id: user.id,
+          amount: bonusCoins,
+          reason: `Kurs tugallandi: ${courseData?.title}`,
+          course_id,
+        });
+
+        finalCertCode = `GRW-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        const studentName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Talaba';
+
         await supabase.from('certificates').insert({
-          cert_code: certCode,
+          cert_code: finalCertCode,
           user_id: user.id,
           course_id,
           student_name: studentName,
@@ -148,6 +145,7 @@ export async function POST(request: Request) {
       bonus_coins: bonusCoins,
       total_completed: completedCount,
       total_lessons: totalLessons,
+      cert_code: courseCompleted ? finalCertCode : undefined,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
