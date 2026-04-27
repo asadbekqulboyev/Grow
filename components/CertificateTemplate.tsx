@@ -1,4 +1,7 @@
-import React, { forwardRef } from 'react';
+'use client';
+
+import React, { forwardRef, useEffect, useState } from 'react';
+import QRCode from 'qrcode';
 
 interface CertificateTemplateProps {
   id: string;
@@ -7,161 +10,168 @@ interface CertificateTemplateProps {
   date: string;
 }
 
-// Kurs nomiga qarab fon rasmi tanlanadi
-const backgrounds: Record<string, string> = {
-  'Shar dekoratsiyasi': '/certificates/shar_sertficate.png',
-  'Vaqt boshqaruvi': '/certificates/time_management.png',
-  'Time Management': '/certificates/time_management.png',
-  'Notiqlik': '/certificates/notiqlik sertifikat.png',
-  'Volontyorlik': '/certificates/volontyorlik sertifikat.png',
-  'Imij': '/certificates/Imidj sertifikat.png',
-  'Imij (Shaxsiy Brend)': '/certificates/Imidj sertifikat.png',
-  'Moliyaviy savodxonlik': '/certificates/moliyaviy_savodxonlik.png',
-  'SMM': '/certificates/moliyaviy_savodxonlik.png',
-  'default': '/certificates/moliyaviy_savodxonlik.png'
-};
+// Kurs nomi → sertifikat fon rasmi (kalit so'z asosida)
+// Har bir entry: [kalit so'zlar massivi, rasm yo'li]
+const CERT_BACKGROUNDS: Array<[string[], string]> = [
+  [['shar', 'dekoratsiya'], '/certificates/shar_sertficate.png'],
+  [['smm', 'social media'], '/certificates/smm_darslari.png'],
+  [['time', 'vaqt', 'management', 'boshqaruv'], '/certificates/time_management.png'],
+  [['notiqlik', 'nutq'], '/certificates/notiqlik sertifikat.png'],
+  [['volontyorlik', 'volontyor', 'volunteer'], '/certificates/volontyorlik sertifikat.png'],
+  [['imij', 'imidj', 'brend', 'brand'], '/certificates/Imidj sertifikat.png'],
+  [['moliyaviy', 'moliya', 'savodxonlik', 'finance', 'financial'], '/certificates/moliyaviy_savodxonlik.png'],
+];
 
-// Sayt domenini aniqlash (har qanday muhitda ishlashi uchun)
-function getAppBaseUrl(): string {
-  // 1. NEXT_PUBLIC_APP_URL env o'zgaruvchisi
-  if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL;
+const DEFAULT_BG = '/certificates/shar_sertficate.png';
+
+function getCertificateBackground(courseName: string): string {
+  const lower = courseName.toLowerCase().trim();
+  for (const [keywords, bgPath] of CERT_BACKGROUNDS) {
+    if (keywords.some(kw => lower.includes(kw))) {
+      return bgPath;
+    }
   }
-  // 2. Browser muhitida hozirgi domain
+  return DEFAULT_BG;
+}
+
+// Domen
+function getAppBaseUrl(): string {
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin;
   }
-  // 3. Vercel muhiti uchun fallback
-  if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_VERCEL_URL) {
-    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
-  }
-  return 'https://grow.uz';
+  return process.env.NEXT_PUBLIC_APP_URL || 'https://grows-alpha.vercel.app';
 }
 
-// Ism uzunligiga qarab font o'lchamini dinamik hisoblash
+// ===== ISM O'LCHAMI =====
+// Dizayner: Montserrat Medium, 22-28 pt
 function calculateFontSize(name: string): number {
   const len = name.length;
-  if (len <= 18) return 22;
-  if (len <= 25) return 20;
-  if (len <= 32) return 18;
-  if (len <= 40) return 16;
-  return 14;
+  if (len <= 18) return 28;
+  if (len <= 25) return 26;
+  if (len <= 32) return 24;
+  if (len <= 40) return 22;
+  return 20;
 }
+
+// ===== SERTIFIKAT POZITSIYALARI =====
+const CERT_WIDTH = 1000;
+const CERT_HEIGHT = 707;
 
 export const CertificateTemplate = forwardRef<HTMLDivElement, CertificateTemplateProps>(
   ({ id, studentName, courseName, date }, ref) => {
-    
-    const bgUrl = backgrounds[courseName] || backgrounds['default'];
+    const bgUrl = getCertificateBackground(courseName);
     const baseUrl = getAppBaseUrl();
     const verifyUrl = `${baseUrl}/verify/${id}`;
     const fontSize = calculateFontSize(studentName);
+    const [qrDataUrl, setQrDataUrl] = useState<string>('');
+
+    useEffect(() => {
+      let cancelled = false;
+      
+      QRCode.toDataURL(verifyUrl, {
+        width: 200,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+        errorCorrectionLevel: 'M',
+      })
+        .then((dataUrl) => {
+          if (!cancelled) setQrDataUrl(dataUrl);
+        })
+        .catch((err) => {
+          console.warn('QR generation failed:', err);
+        });
+
+      return () => { cancelled = true; };
+    }, [verifyUrl]);
 
     return (
       <div
         ref={ref}
         style={{ 
-          width: '1000px', 
-          height: '707px', 
+          width: `${CERT_WIDTH}px`, 
+          height: `${CERT_HEIGHT}px`, 
           backgroundColor: 'white',
           position: 'relative',
-          fontFamily: "var(--font-montserrat), sans-serif"
+          fontFamily: "'Montserrat', sans-serif",
+          overflow: 'hidden',
         }}
-        className="flex flex-col items-center overflow-hidden box-border"
       >
-        {/* Background Image */}
+        {/* Fon rasmi */}
         <img 
           src={bgUrl}
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          alt="Certificate Template"
+          style={{ 
+            position: 'absolute', top: 0, left: 0, 
+            width: '100%', height: '100%', 
+            objectFit: 'cover',
+          }}
+          alt="Certificate Background"
           crossOrigin="anonymous"
         />
 
-        <div className="relative z-10 w-full h-full flex flex-col">
-          
-          {/* Ism-sharif — Chiziq ustida, fond rangi bilan birxil, kichikroq */}
-          <div 
-            className="absolute"
+        {/* ISM-FAMILIYA — chiziqdan yuqorida */}
+        <div 
+          style={{ 
+            position: 'absolute',
+            bottom: '285px',
+            left: '143px',
+            maxWidth: '500px',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          <span 
             style={{ 
-              top: '52%', 
-              left: '11.8%', 
-              width: '55%',
+              fontSize: `${fontSize}px`,
+              fontWeight: 600,
+              color: '#228B22',
+              textTransform: 'uppercase',
+              lineHeight: 'normal',
+              letterSpacing: '0.5px',
+              display: 'block',
             }}
           >
-             <h2 
-               style={{ 
-                 fontSize: `${fontSize}px`,
-                 fontWeight: 700,
-                 color: '#2D5A27',
-                 textTransform: 'uppercase',
-                 lineHeight: 1.3,
-                 letterSpacing: '0.3px',
-                 overflow: 'hidden',
-                 textOverflow: 'ellipsis',
-                 whiteSpace: 'nowrap',
-                 margin: 0,
-                 padding: 0,
-               }}
-             >
-               {studentName}
-             </h2>
-          </div>
+            {studentName}
+          </span>
+        </div>
 
-          {/* QR kod — Pastki chap burchak (Muhurga to'qnashmasligi uchun) */}
+        {/* QR kod — pastki chap (haqiqiy, skanerlanadigan) */}
+        <div 
+          style={{ 
+            position: 'absolute',
+            bottom: '28px', 
+            left: '70px',
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: '6px',
+          }}
+        >
           <div 
-            className="absolute flex items-end gap-2"
             style={{ 
-              bottom: '30px', 
-              left: '75px',
+              width: '60px', height: '60px', 
+              backgroundColor: '#FFFFFF', 
+              padding: '3px', borderRadius: '4px', 
+              border: '1px solid rgba(0,0,0,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              overflow: 'hidden',
             }}
           >
-            <div 
-              style={{ 
-                width: '62px', 
-                height: '62px', 
-                backgroundColor: '#FFFFFF', 
-                padding: '3px', 
-                borderRadius: '4px', 
-                border: '1px solid #e5e7eb',
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                overflow: 'hidden',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-              }}
-            >
-               <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(verifyUrl)}`}
-                alt="QR Code"
-                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                crossOrigin="anonymous"
-               />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-               <span 
-                 style={{ 
-                   fontSize: '7px', 
-                   fontFamily: 'monospace',
-                   fontWeight: 600,
-                   color: '#6B7280',
-                   opacity: 0.7,
-                 }}
-               >
-                 ID: {id}
-               </span>
-               <span 
-                 style={{ 
-                   fontSize: '7px', 
-                   fontFamily: 'monospace',
-                   fontWeight: 600,
-                   color: '#6B7280',
-                   opacity: 0.7,
-                 }}
-               >
-                 {date}
-               </span>
-            </div>
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="QR" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', backgroundColor: '#f3f4f6' }} />
+            )}
           </div>
-
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{ fontSize: '7px', fontFamily: 'monospace', fontWeight: 600, color: '#9CA3AF' }}>
+              ID: {id.length > 12 ? id.substring(0, 12) + '...' : id}
+            </span>
+            <span style={{ fontSize: '7px', fontFamily: 'monospace', fontWeight: 600, color: '#9CA3AF' }}>
+              {date}
+            </span>
+          </div>
         </div>
       </div>
     );

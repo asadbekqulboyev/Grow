@@ -19,7 +19,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [totalCoins, setTotalCoins] = useState(0);
-  const [completedCourses, setCompletedCourses] = useState(0);
+  const [completedLessons, setCompletedLessons] = useState(0);
   const [certificates, setCertificates] = useState<any[]>([]);
   const router = useRouter();
 
@@ -45,16 +45,15 @@ export default function ProfilePage() {
         .eq('user_id', userId);
       setTotalCoins((coinsData || []).reduce((s, c) => s + (c.amount || 0), 0));
 
-      // Fetch completed courses count
+      // Fetch completed lessons count
       const { data: progressData } = await supabase
         .from('user_progress')
-        .select('course_id')
+        .select('id')
         .eq('user_id', userId)
         .eq('completed', true);
-      const uniqueCourses = new Set((progressData || []).map(p => p.course_id));
-      setCompletedCourses(uniqueCourses.size);
+      setCompletedLessons(progressData?.length || 0);
 
-      // Fetch certificates
+      // Fetch certificates (authoritative source for completed courses)
       const { data: certsData } = await supabase
         .from('certificates')
         .select('*')
@@ -120,8 +119,8 @@ export default function ProfilePage() {
     }
   };
 
-  // Tree level
-  const treeLevel = totalCoins < 200 ? 1 : totalCoins < 500 ? 2 : totalCoins < 1000 ? 3 : totalCoins < 2000 ? 4 : 5;
+  // Tree level based on completed courses (certificates count)
+  const treeLevel = certificates.length === 0 ? 1 : certificates.length === 1 ? 2 : certificates.length === 2 ? 3 : certificates.length === 3 ? 4 : 5;
 
   if (!user) {
     return <div className="flex-1 flex justify-center items-center min-h-screen bg-[#F3F4F6] dark:bg-[#111827]">Yuklanmoqda...</div>;
@@ -180,7 +179,7 @@ export default function ProfilePage() {
              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{user?.user_metadata?.full_name || 'Foydalanuvchi'}</h3>
              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4 sm:mb-5">{user?.email}</p>
              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#A8E6CF]/20 text-[#2D5A27] dark:text-[#A8E6CF] rounded-full text-xs font-bold uppercase tracking-wider">
-               <Award className="w-4 h-4" /> Daraxt Level {treeLevel}
+               <Award className="w-4 h-4" /> 🌳 Level {treeLevel}: {['Urug\'', 'Nihol', 'O\'sib borayotgan', 'Yosh daraxt', 'Bahaybat daraxt'][treeLevel - 1]}
              </div>
           </div>
 
@@ -193,7 +192,11 @@ export default function ProfilePage() {
             <div className="space-y-4">
                <div className="flex justify-between items-center pb-4 border-b border-gray-50 dark:border-gray-800">
                  <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">Tugallangan kurslar</span>
-                 <span className="font-bold text-gray-900 dark:text-gray-100 text-lg">{completedCourses}</span>
+                 <span className="font-bold text-gray-900 dark:text-gray-100 text-lg">{certificates.length}</span>
+               </div>
+               <div className="flex justify-between items-center pb-4 border-b border-gray-50 dark:border-gray-800">
+                 <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">O&apos;tilgan darslar</span>
+                 <span className="font-bold text-gray-900 dark:text-gray-100 text-lg">{completedLessons}</span>
                </div>
                <div className="flex justify-between items-center pb-4 border-b border-gray-50 dark:border-gray-800">
                  <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">Olingan sertifikatlar</span>

@@ -26,75 +26,57 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
     try {
       const element = certRef.current;
       
-      // Wait for the component to be fully rendered
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Komponentni to'liq renderlanishi uchun kutish (QR + rasmlar)
+      await new Promise(resolve => setTimeout(resolve, 1200));
 
-      // Function to convert image to data URL
-      const toDataURL = (url: string): Promise<string> => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.crossOrigin = 'Anonymous';
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL('image/png'));
-          };
-          img.onerror = reject;
-          img.src = url;
-        });
-      };
-
-      // Convert all images in the element to Data URLs
-      const images = Array.from(element.getElementsByTagName('img'));
-      for (const img of images) {
+      // Fon rasmini data URL ga aylantirish (CORS uchun)
+      const bgImages = Array.from(element.querySelectorAll('img'));
+      for (const img of bgImages) {
         try {
-          if (img.src.startsWith('data:')) continue;
+          if (img.src.startsWith('data:')) continue; // QR allaqachon data URL
           
-          // Add a dummy param for cache busting
-          const separator = img.src.includes('?') ? '&' : '?';
-          const cacheBustUrl = `${img.src}${separator}cert_cb=${Date.now()}`;
-          
-          const dataUrl = await toDataURL(cacheBustUrl);
+          // Faqat lokal rasmlarni convert qilish
+          const response = await fetch(img.src);
+          const blob = await response.blob();
+          const dataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
           img.src = dataUrl;
         } catch (e) {
-          console.warn('Image to Data URL failed, keeping original:', img.src, e);
-          // If it fails, keep the original but set crossOrigin
-          img.crossOrigin = 'Anonymous';
+          console.warn('Rasm convert xatosi:', img.src, e);
         }
       }
+
+      // Yana biroz kutish (rasmlar yangilangandan keyin)
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#FFFFFF',
         logging: false,
-        // Ensure no oklch colors are processed by forcing CSS styles if needed
-        onclone: (clonedDoc) => {
-          const el = clonedDoc.querySelector('[ref]') || clonedDoc.body;
-          // You could potentially traverse and replace oklch here if needed, 
-          // but we handled it in the component itself.
-        }
+        width: 1000,
+        height: 707,
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       
-      const width = 1000;
-      const height = 707;
-
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'px',
-        format: [width, height]
+        format: [1000, 707],
       });
       
-      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-      pdf.save(`Sertifikat_${certData.courseName.replace(/\s+/g, '_')}_${certData.id.substring(0, 8)}.pdf`);
+      pdf.addImage(imgData, 'PNG', 0, 0, 1000, 707);
+      
+      const fileName = `Sertifikat_${certData.courseName.replace(/\s+/g, '_')}_${certData.id.substring(0, 8)}.pdf`;
+      pdf.save(fileName);
       
     } catch (error: any) {
-      console.error('PDF Final Error:', error);
+      console.error('PDF xatosi:', error);
       alert('Xatolik yuz berdi. Iltimos, sahifani yangilab qayta urinib ko\'ring.');
     } finally {
       setIsGenerating(false);
@@ -111,7 +93,7 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
         {isGenerating ? 'Yuklanmoqda...' : children}
       </button>
 
-      {/* Visually hidden container specifically for the print generation */}
+      {/* Offscreen — PDF generatsiya uchun */}
       <div 
         style={{ 
           position: 'fixed', 
@@ -119,7 +101,7 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
           left: '-9999px',
           zIndex: -50,
           opacity: 0,
-          pointerEvents: 'none'
+          pointerEvents: 'none',
         }}
       >
         <CertificateTemplate
