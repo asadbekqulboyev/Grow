@@ -478,47 +478,47 @@ export default function LessonPage() {
         {!testMode && (
           <div className="mb-6">
             {completionResult?.course_completed ? (
-              <div className="bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] rounded-3xl p-6 text-white text-center shadow-lg animate-in fade-in zoom-in duration-500">
-                <PartyPopper className="w-12 h-12 mx-auto mb-3 text-yellow-300" />
-                <h3 className="text-2xl font-black mb-2 uppercase tracking-tight">Tabriklaymiz!</h3>
-                <p className="text-white/90 mb-1 font-medium">Siz kursni to&apos;liq tamomladingiz!</p>
-                <p className="font-bold text-yellow-300 mb-6 bg-black/20 p-2 rounded-xl inline-block max-w-max mx-auto shadow-inner">
+              <div className="bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white text-center shadow-lg animate-in fade-in zoom-in duration-500">
+                <PartyPopper className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 text-yellow-300" />
+                <h3 className="text-lg sm:text-2xl font-black mb-1 sm:mb-2 uppercase tracking-tight">Tabriklaymiz!</h3>
+                <p className="text-white/90 mb-1 font-medium text-sm sm:text-base">Siz kursni to&apos;liq tamomladingiz!</p>
+                <p className="font-bold text-yellow-300 mb-4 sm:mb-6 bg-black/20 py-1.5 px-3 sm:p-2 rounded-lg sm:rounded-xl inline-block max-w-max mx-auto shadow-inner text-xs sm:text-sm">
                   +{completionResult.bonus_coins} bonus tanga qo&apos;lga kiritildi
                 </p>
 
                 {/* MODAL OYNA ISHLATAMIZ */}
                 {!certSaved && (
-                  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative animate-in zoom-in-95 duration-300">
+                  <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-3xl w-full max-w-md p-5 sm:p-8 shadow-2xl relative animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto">
                       
-                      <div className="text-center mb-6">
-                         <div className="w-16 h-16 bg-[#2D5A27]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Award className="w-8 h-8 text-[#2D5A27]" />
+                      <div className="text-center mb-4 sm:mb-6">
+                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#2D5A27]/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                            <Award className="w-6 h-6 sm:w-8 sm:h-8 text-[#2D5A27]" />
                          </div>
-                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Sertifikat uchun ma&apos;lumot</h3>
-                         <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+                         <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1.5 sm:mb-2">Sertifikat uchun ma&apos;lumot</h3>
+                         <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm leading-relaxed px-2">
                            Sertifikat yuziga muhrlanadigan To'liq ism familiya va sharifingizni aniq xatosiz kiriting:
                          </p>
                       </div>
 
-                      <div className="space-y-4 text-left">
+                      <div className="space-y-3 sm:space-y-4 text-left">
                         <div>
-                          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">F.I.SH (To&apos;liq ismingiz)</label>
+                          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">F.I.SH (To&apos;liq ismingiz)</label>
                           <input 
                             type="text" 
                             placeholder="G'aniyev Alisher Valiyevich" 
                             value={certName}
                             onChange={(e) => setCertName(e.target.value)}
-                            className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-[#2D5A27] focus:bg-white dark:focus:border-[#A8E6CF] transition-all font-bold text-lg"
+                            className="w-full px-3.5 py-3 sm:px-4 sm:py-3.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-[#2D5A27] focus:bg-white dark:focus:border-[#A8E6CF] transition-all font-bold text-base sm:text-lg"
                           />
                         </div>
 
                         <button 
                           onClick={handleUpdateCertName} 
                           disabled={certUpdating || certName.trim().length < 5}
-                          className="w-full py-4 bg-[#2D5A27] text-white rounded-xl font-bold uppercase text-sm tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1e3c1a] transition-colors flex items-center justify-center gap-2 shadow-lg mt-2"
+                          className="w-full py-3.5 sm:py-4 bg-[#2D5A27] text-white rounded-xl font-bold uppercase text-xs sm:text-sm tracking-wide disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1e3c1a] transition-colors flex items-center justify-center gap-2 shadow-lg mt-1 sm:mt-2"
                         >
-                          {certUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+                          {certUpdating ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
                           {certUpdating ? "Saqlanmoqda..." : "Tasdiqlash va Sertifikatni tayyorlash"}
                         </button>
                       </div>
@@ -528,14 +528,14 @@ export default function LessonPage() {
                 )}
 
                 {certSaved && (
-                   <div className="text-center py-4 animate-in zoom-in slide-in-from-bottom-4 duration-500">
-                      <CheckCircle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-                      <h4 className="font-bold text-xl mb-1 text-white">Hammasi tayyor!</h4>
-                      <p className="text-sm text-green-100 mb-6 font-medium">Sertifikatingiz sizning nomingizga maxsus yaratildi.</p>
+                   <div className="text-center py-2 sm:py-4 animate-in zoom-in slide-in-from-bottom-4 duration-500">
+                      <CheckCircle className="w-10 h-10 sm:w-16 sm:h-16 text-yellow-400 mx-auto mb-2 sm:mb-4" />
+                      <h4 className="font-bold text-base sm:text-xl mb-1 text-white">Hammasi tayyor!</h4>
+                      <p className="text-xs sm:text-sm text-green-100 mb-4 sm:mb-6 font-medium">Sertifikatingiz sizning nomingizga maxsus yaratildi.</p>
                       
                       {(finalGeneratedCertCode || completionResult?.cert_code) && (
                         <DownloadCertificateBtn 
-                          className="w-full sm:w-auto px-8 py-4 bg-yellow-400 text-yellow-900 rounded-xl font-black uppercase tracking-wide hover:bg-yellow-300 transition-transform active:scale-95 flex items-center justify-center gap-2 mx-auto shadow-xl shadow-yellow-500/20"
+                          className="w-full px-6 py-3 sm:px-8 sm:py-4 bg-yellow-400 text-yellow-900 rounded-xl font-black uppercase text-xs sm:text-sm tracking-wide hover:bg-yellow-300 transition-transform active:scale-95 flex items-center justify-center gap-2 mx-auto shadow-xl shadow-yellow-500/20"
                           certData={{
                             id: (finalGeneratedCertCode || completionResult?.cert_code) as string,
                             studentName: certName.trim(),
@@ -543,12 +543,12 @@ export default function LessonPage() {
                             date: new Date().toLocaleDateString('uz-UZ'),
                           }}
                         >
-                          <Award className="w-5 h-5" />
+                          <Award className="w-4 h-4 sm:w-5 sm:h-5" />
                           PDF FORMATDA YUKLAB OLISH
                         </DownloadCertificateBtn>
                       )}
                       
-                      <Link href="/profile" className="block mt-4 text-sm text-green-100 hover:text-white font-medium underline underline-offset-4">
+                      <Link href="/profile" className="block mt-3 sm:mt-4 text-xs sm:text-sm text-green-100 hover:text-white font-medium underline underline-offset-4">
                          Profil sahifasiga o&apos;tish
                       </Link>
                    </div>
