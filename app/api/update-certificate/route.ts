@@ -55,7 +55,6 @@ export async function POST(request: Request) {
           course_id,
           student_name: student_name,
           course_name: courseData?.title || 'Maxsus Kurs',
-          certificate_url: '', 
         })
         .select()
         .single();

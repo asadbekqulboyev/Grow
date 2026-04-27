@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       .upsert({
         user_id: user.id,
         lesson_id,
+        course_id,
         completed: true,
         completed_at: new Date().toISOString(),
       }, { onConflict: 'user_id,lesson_id' });
@@ -134,7 +135,6 @@ export async function POST(request: Request) {
           course_id,
           student_name: studentName,
           course_name: courseData?.title || 'Noma\'lum kurs',
-          certificate_url: '', // Add empty string to satisfy NOT NULL constraint if it exists
         });
       }
     }

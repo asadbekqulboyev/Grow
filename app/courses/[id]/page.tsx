@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Clock, PlayCircle, Coins, Lock, CheckCircle, BookOpen } from 'lucide-react';
+import { ArrowLeft, Clock, PlayCircle, Coins, Lock, CheckCircle, BookOpen, Award } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { DownloadCertificateBtn } from '@/components/DownloadCertificateBtn';
 
 interface Course {
   id: string;
@@ -36,6 +37,9 @@ export default function CourseDetailsPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [certificate, setCertificate] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     if (!courseId) return;
@@ -65,6 +69,41 @@ export default function CourseDetailsPage() {
         if (isMounted) {
           setCourse(courseData);
           setLessons(lessonsData || []);
+        }
+
+        // 3. User Progress & Completion
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser && isMounted) {
+          setUser(currentUser);
+          
+          const lessonIds = (lessonsData || []).map(l => l.id);
+          if (lessonIds.length > 0) {
+            const { data: progressData } = await supabase
+              .from('user_progress')
+              .select('lesson_id')
+              .eq('user_id', currentUser.id)
+              .in('lesson_id', lessonIds)
+              .eq('completed', true);
+            
+            const completedCount = progressData?.length || 0;
+            const totalCount = lessonIds.length;
+
+            if (completedCount >= totalCount && totalCount > 0) {
+              setIsCompleted(true);
+              
+              // 4. Fetch Certificate
+              const { data: certData } = await supabase
+                .from('certificates')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .eq('course_id', courseId)
+                .maybeSingle();
+              
+              if (certData && isMounted) {
+                setCertificate(certData);
+              }
+            }
+          }
         }
       } catch (err) {
         console.error('Kurs ma\'lumotlarini yuklashda xatolik:', err);
@@ -246,7 +285,47 @@ export default function CourseDetailsPage() {
                </li>
             </ul>
 
-            {firstLesson ? (
+            {isCompleted ? (
+              <div className="space-y-4">
+                <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-2xl border border-green-100 dark:border-green-900/30 text-center">
+                   <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                   </div>
+                   <h4 className="font-bold text-green-900 dark:text-green-100 text-sm mb-1">Kurs o'zlashtirildi!</h4>
+                   <p className="text-[10px] text-green-700 dark:text-green-400">Siz ushbu kursni muvaffaqiyatli yakunlab bo'lgansiz.</p>
+                </div>
+                
+                {certificate ? (
+                  <DownloadCertificateBtn 
+                    className="w-full bg-[#2D5A27] hover:bg-[#1f421a] dark:bg-[#A8E6CF] dark:hover:bg-[#86d4b8] text-white dark:text-[#111827] py-4 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 active:scale-[0.98]"
+                    certData={{
+                      id: certificate.cert_code,
+                      studentName: certificate.student_name,
+                      courseName: certificate.course_name,
+                      date: new Date(certificate.issued_at).toLocaleDateString('uz-UZ'),
+                    }}
+                  >
+                    <Award className="w-5 h-5" />
+                    Sertifikatni yuklash
+                  </DownloadCertificateBtn>
+                ) : (
+                  <Link 
+                    href={`/courses/${courseId}/lesson/${firstLesson?.id}`}
+                    className="w-full bg-[#2D5A27] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2"
+                  >
+                    Sertifikatni olish
+                  </Link>
+                )}
+                
+                <Link 
+                  href={`/courses/${courseId}/lesson/${firstLesson?.id}`}
+                  className="w-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  <PlayCircle className="w-4 h-4" />
+                  Darslarni qayta ko'rish
+                </Link>
+              </div>
+            ) : firstLesson ? (
               <Link 
                 href={`/courses/${courseId}/lesson/${firstLesson.id}`}
                 className="w-full bg-[#2D5A27] hover:bg-[#1f421a] dark:bg-[#A8E6CF] dark:hover:bg-[#86d4b8] text-white dark:text-[#111827] py-4 rounded-xl font-bold transition-colors mb-3 flex items-center justify-center gap-2"
@@ -260,9 +339,11 @@ export default function CourseDetailsPage() {
                 Darslar hali mavjud emas
               </button>
             )}
-            <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-              Kursni to&apos;liq tugatib {course.reward_coins} tanga yutib oling
-            </p>
+            {!isCompleted && (
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                Kursni to&apos;liq tugatib {course.reward_coins} tanga yutib oling
+              </p>
+            )}
           </div>
         </div>
         

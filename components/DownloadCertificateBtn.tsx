@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { CertificateTemplate } from './CertificateTemplate';
-import * as htmlToImage from 'html-to-image';
+import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 interface DownloadCertificateBtnProps {
@@ -26,13 +26,60 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
     try {
       const element = certRef.current;
       
-      // html-to-image options to handle CORS and quality
-      const imgData = await htmlToImage.toPng(element, {
-        quality: 0.95,
-        pixelRatio: 2,
-        cacheBust: true, // CORS xatoliklarini oldini olish uchun
+      // Wait for the component to be fully rendered
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Function to convert image to data URL
+      const toDataURL = (url: string): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = 'Anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          };
+          img.onerror = reject;
+          img.src = url;
+        });
+      };
+
+      // Convert all images in the element to Data URLs
+      const images = Array.from(element.getElementsByTagName('img'));
+      for (const img of images) {
+        try {
+          if (img.src.startsWith('data:')) continue;
+          
+          // Add a dummy param for cache busting
+          const separator = img.src.includes('?') ? '&' : '?';
+          const cacheBustUrl = `${img.src}${separator}cert_cb=${Date.now()}`;
+          
+          const dataUrl = await toDataURL(cacheBustUrl);
+          img.src = dataUrl;
+        } catch (e) {
+          console.warn('Image to Data URL failed, keeping original:', img.src, e);
+          // If it fails, keep the original but set crossOrigin
+          img.crossOrigin = 'Anonymous';
+        }
+      }
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
         backgroundColor: '#FFFFFF',
+        logging: false,
+        // Ensure no oklch colors are processed by forcing CSS styles if needed
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.querySelector('[ref]') || clonedDoc.body;
+          // You could potentially traverse and replace oklch here if needed, 
+          // but we handled it in the component itself.
+        }
       });
+      
+      const imgData = canvas.toDataURL('image/png');
       
       const width = 1000;
       const height = 707;
@@ -47,8 +94,8 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
       pdf.save(`Sertifikat_${certData.courseName.replace(/\s+/g, '_')}_${certData.id.substring(0, 8)}.pdf`);
       
     } catch (error: any) {
-      console.error('PDF Generation Detail Error:', error);
-      alert(`Sertifikatni yuklab olishda xato: ${error.message || 'Noma\'lum xatolik'}`);
+      console.error('PDF Final Error:', error);
+      alert('Xatolik yuz berdi. Iltimos, sahifani yangilab qayta urinib ko\'ring.');
     } finally {
       setIsGenerating(false);
     }
@@ -72,8 +119,7 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
           left: '-9999px',
           zIndex: -50,
           opacity: 0,
-          pointerEvents: 'none',
-          visibility: 'hidden'
+          pointerEvents: 'none'
         }}
       >
         <CertificateTemplate
