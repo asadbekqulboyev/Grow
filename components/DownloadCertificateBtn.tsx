@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { CertificateTemplate } from './CertificateTemplate';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -14,14 +14,16 @@ interface DownloadCertificateBtnProps {
   };
   className?: string;
   children?: React.ReactNode;
+  autoDownload?: boolean;
 }
 
-export function DownloadCertificateBtn({ certData, className, children }: DownloadCertificateBtnProps) {
+export function DownloadCertificateBtn({ certData, className, children, autoDownload }: DownloadCertificateBtnProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
   const certRef = useRef<HTMLDivElement>(null);
 
   const handleDownload = async () => {
-    if (!certRef.current) return;
+    if (!certRef.current || isGenerating) return;
     setIsGenerating(true);
     try {
       const element = certRef.current;
@@ -33,9 +35,7 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
       const bgImages = Array.from(element.querySelectorAll('img'));
       for (const img of bgImages) {
         try {
-          if (img.src.startsWith('data:')) continue; // QR allaqachon data URL
-          
-          // Faqat lokal rasmlarni convert qilish
+          if (img.src.startsWith('data:')) continue;
           const response = await fetch(img.src);
           const blob = await response.blob();
           const dataUrl = await new Promise<string>((resolve) => {
@@ -49,7 +49,6 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
         }
       }
 
-      // Yana biroz kutish (rasmlar yangilangandan keyin)
       await new Promise(resolve => setTimeout(resolve, 300));
 
       const canvas = await html2canvas(element, {
@@ -74,6 +73,7 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
       
       const fileName = `Sertifikat_${certData.courseName.replace(/\s+/g, '_')}_${certData.id.substring(0, 8)}.pdf`;
       pdf.save(fileName);
+      setDownloaded(true);
       
     } catch (error: any) {
       console.error('PDF xatosi:', error);
@@ -83,6 +83,17 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
     }
   };
 
+  // Avtomatik yuklab olish — komponent renderlanganidan keyin
+  useEffect(() => {
+    if (autoDownload && !downloaded && certData.id) {
+      const timer = setTimeout(() => {
+        handleDownload();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoDownload, certData.id]);
+
   return (
     <>
       <button 
@@ -90,7 +101,7 @@ export function DownloadCertificateBtn({ certData, className, children }: Downlo
         disabled={isGenerating}
         className={className}
       >
-        {isGenerating ? 'Yuklanmoqda...' : children}
+        {isGenerating ? 'Yuklanmoqda...' : (downloaded && autoDownload ? '✅ Qayta yuklab olish' : children)}
       </button>
 
       {/* Offscreen — PDF generatsiya uchun */}

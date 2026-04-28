@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { DownloadCertificateBtn } from '@/components/DownloadCertificateBtn';
+import { CertificatePreview } from '@/components/CertificatePreview';
 
 export default function ProfilePage() {
   const [notifications, setNotifications] = useState(true);
@@ -318,27 +319,31 @@ export default function ProfilePage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {certificates.map((cert) => (
-                  <div key={cert.id} className="bg-white dark:bg-gray-900 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700/50 p-5 relative flex flex-col hover:border-[#2D5A27]/50 dark:hover:border-[#2D5A27]/50 transition-colors">
-                    <div className="flex justify-between items-center mb-3">
-                        <div className="w-8 h-8 bg-[#2D5A27] rounded-md text-white flex items-center justify-center font-bold font-serif text-xs">G</div>
-                        <div className="text-xs text-gray-400 font-mono tracking-wider font-semibold">{cert.cert_code}</div>
-                    </div>
-                    <div className="mb-6 mt-2">
-                      <h4 className="font-bold text-base text-gray-900 dark:text-white leading-tight">{cert.course_name}</h4>
+                  <div key={cert.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700/50 overflow-hidden hover:border-[#2D5A27]/50 dark:hover:border-[#2D5A27]/50 transition-colors shadow-sm">
+                    {/* Haqiqiy sertifikat rasmi */}
+                    <CertificatePreview
+                      id={cert.cert_code}
+                      studentName={cert.student_name}
+                      courseName={cert.course_name}
+                      date={new Date(cert.issued_at).toLocaleDateString('uz-UZ')}
+                    />
+                    {/* Kurs nomi va tugmalar */}
+                    <div className="p-4">
+                      <h4 className="font-bold text-sm text-gray-900 dark:text-white leading-tight line-clamp-1">{cert.course_name}</h4>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">{new Date(cert.issued_at).toLocaleDateString('uz-UZ')}</p>
-                    </div>
-                    <div className="mt-auto flex gap-3">
-                      <DownloadCertificateBtn 
-                        className="px-4 py-2 bg-[#2D5A27] text-white font-bold text-xs rounded-xl hover:bg-[#1e3c1a] shadow-sm transition-colors flex-1 text-center whitespace-nowrap"
-                        certData={{
-                          id: cert.cert_code,
-                          studentName: cert.student_name,
-                          courseName: cert.course_name,
-                          date: new Date(cert.issued_at).toLocaleDateString('uz-UZ'),
-                        }}
-                      >
-                        PDF yuklash
-                      </DownloadCertificateBtn>
+                      <div className="mt-3 flex gap-2">
+                        <DownloadCertificateBtn 
+                          className="px-4 py-2 bg-[#2D5A27] text-white font-bold text-xs rounded-xl hover:bg-[#1e3c1a] shadow-sm transition-colors flex-1 text-center whitespace-nowrap"
+                          certData={{
+                            id: cert.cert_code,
+                            studentName: cert.student_name,
+                            courseName: cert.course_name,
+                            date: new Date(cert.issued_at).toLocaleDateString('uz-UZ'),
+                          }}
+                        >
+                          📄 PDF yuklash
+                        </DownloadCertificateBtn>
+                      </div>
                     </div>
                   </div>
                 ))}

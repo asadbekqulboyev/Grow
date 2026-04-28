@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import { CheckCircle, XCircle, Award, Download, ArrowLeft } from 'lucide-react';
+import { CheckCircle, XCircle, Award, ArrowLeft, ExternalLink } from 'lucide-react';
+import { CertificatePreviewWrapper } from './CertificatePreviewWrapper';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -64,7 +65,7 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#111827] dark:to-[#1a2332] flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 max-w-lg w-full overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 max-w-2xl w-full overflow-hidden">
         
         {/* Header */}
         <div className="bg-gradient-to-r from-[#2D5A27] to-[#4a8c42] px-6 sm:px-8 py-6 text-white text-center relative overflow-hidden">
@@ -78,8 +79,18 @@ export default async function VerifyCertificatePage({ params }: PageProps) {
           </div>
         </div>
 
+        {/* Certificate Image Preview */}
+        <div className="px-4 sm:px-6 pt-6">
+          <CertificatePreviewWrapper
+            certCode={cert.cert_code}
+            studentName={cert.student_name}
+            courseName={cert.course_name}
+            issuedAt={cert.issued_at}
+          />
+        </div>
+
         {/* Content */}
-        <div className="px-6 sm:px-8 py-8">
+        <div className="px-6 sm:px-8 py-6">
           
           {/* Certificate Info */}
           <div className="space-y-5">

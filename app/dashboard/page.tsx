@@ -1,5 +1,6 @@
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { DownloadCertificateBtn } from '@/components/DownloadCertificateBtn';
+import { CertificatePreview } from '@/components/CertificatePreview';
 import Link from 'next/link';
 import Image from 'next/image';
 import { UserCircle } from 'lucide-react';
@@ -350,19 +351,14 @@ export default async function Page() {
               <Link href="/profile" className="text-xs font-semibold text-[#2D5A27] dark:text-[#A8E6CF] underline transition-colors">Barchasi</Link>
             </div>
             {latestCert ? (
-              <div className="flex-1 bg-[#F9FAFB] dark:bg-gray-700 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-4 relative flex flex-col transition-colors duration-300">
-                <div className="flex justify-between">
-                    <div className="w-8 h-8 bg-[#2D5A27] dark:bg-[#1e3c1a] rounded-sm text-white flex items-center justify-center font-bold font-serif transition-colors">G</div>
-                    <div className="text-[8px] text-right text-gray-400 dark:text-gray-400 font-mono">ID: {latestCert.cert_code}</div>
-                </div>
-                <div className="mt-2 sm:mt-3 text-center">
-                    <h4 className="text-[12px] sm:text-[14px] font-serif italic text-gray-800 dark:text-gray-200 transition-colors">Mualliflik Sertifikati</h4>
-                    <div className="h-[1px] w-12 bg-[#A8E6CF] dark:bg-[#2D5A27] mx-auto my-1 sm:my-2 transition-colors"></div>
-                    <p className="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400 transition-colors">taqdirlandi</p>
-                    <p className="text-sm font-bold text-[#2D5A27] dark:text-[#A8E6CF] mt-1 transition-colors line-clamp-1">{latestCert.student_name}</p>
-                    <p className="text-[8px] mt-1 sm:mt-2 text-gray-600 dark:text-gray-400 transition-colors">quyidagi kursni tugatgani uchun:</p>
-                    <p className="text-[10px] sm:text-[11px] font-semibold text-gray-800 dark:text-gray-200 transition-colors line-clamp-2">{latestCert.course_name}</p>
-                </div>
+              <div className="flex-1 flex flex-col">
+                {/* Haqiqiy sertifikat rasmi */}
+                <CertificatePreview
+                  id={latestCert.cert_code}
+                  studentName={latestCert.student_name}
+                  courseName={latestCert.course_name}
+                  date={new Date(latestCert.issued_at).toLocaleDateString('uz-UZ')}
+                />
                 {/* PDF yuklab olish tugmasi */}
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                   <DownloadCertificateBtn

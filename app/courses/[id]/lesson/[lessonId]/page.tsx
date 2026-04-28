@@ -536,6 +536,7 @@ export default function LessonPage() {
                       {(finalGeneratedCertCode || completionResult?.cert_code) && (
                         <DownloadCertificateBtn 
                           className="w-full px-6 py-3 sm:px-8 sm:py-4 bg-yellow-400 text-yellow-900 rounded-xl font-black uppercase text-xs sm:text-sm tracking-wide hover:bg-yellow-300 transition-transform active:scale-95 flex items-center justify-center gap-2 mx-auto shadow-xl shadow-yellow-500/20"
+                          autoDownload={true}
                           certData={{
                             id: (finalGeneratedCertCode || completionResult?.cert_code) as string,
                             studentName: certName.trim(),
