@@ -37,6 +37,25 @@ function getYouTubeEmbedUrl(url: string): string | null {
   return null;
 }
 
+function getVimeoEmbedUrl(url: string): string | null {
+  try {
+    const patterns = [
+      /vimeo\.com\/(?:video\/)?([0-9]+)/,
+      /player\.vimeo\.com\/video\/([0-9]+)/,
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        // Extract hash parameter if present (needed for private videos)
+        const hashMatch = url.match(/[?&]h=([a-zA-Z0-9]+)/);
+        const hash = hashMatch ? `?h=${hashMatch[1]}&` : '?';
+        return `https://player.vimeo.com/video/${match[1]}${hash}badge=0&autopause=0&player_id=vimeo-player&app_id=58479`;
+      }
+    }
+  } catch {}
+  return null;
+}
+
 function isDirectVideo(url: string): boolean {
   if (!url) return false;
   const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
@@ -270,6 +289,7 @@ export default function LessonPage() {
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
   const embedUrl = lesson.video_url ? getYouTubeEmbedUrl(lesson.video_url) : null;
+  const vimeoEmbedUrl = lesson.video_url ? getVimeoEmbedUrl(lesson.video_url) : null;
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#F3F4F6] dark:bg-[#111827] transition-colors duration-300">
@@ -431,6 +451,40 @@ export default function LessonPage() {
                   // Fallback for cases where YT API is not yet ready
                   setTimeout(() => setCanComplete(true), 15000); // 15 seconds fallback
                 }
+              }}
+            />
+          ) : vimeoEmbedUrl ? (
+            <iframe
+              id="vimeo-player"
+              src={vimeoEmbedUrl}
+              title={lesson.title}
+              className="w-full h-full absolute inset-0"
+              allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
+              allowFullScreen
+              onLoad={() => {
+                // Vimeo Player API - postMessage orqali video tugashini kuzatish
+                const vimeoIframe = document.getElementById('vimeo-player') as HTMLIFrameElement;
+                if (vimeoIframe) {
+                  // Vimeo API ga ulanish
+                  vimeoIframe.contentWindow?.postMessage(JSON.stringify({ method: 'addEventListener', value: 'finish' }), '*');
+                  vimeoIframe.contentWindow?.postMessage(JSON.stringify({ method: 'addEventListener', value: 'ended' }), '*');
+                }
+
+                const handleVimeoMessage = (event: MessageEvent) => {
+                  try {
+                    if (typeof event.data === 'string') {
+                      const data = JSON.parse(event.data);
+                      if (data.event === 'finish' || data.event === 'ended') {
+                        setVideoEnded(true);
+                        setCanComplete(true);
+                      }
+                    }
+                  } catch {}
+                };
+                window.addEventListener('message', handleVimeoMessage);
+
+                // Fallback — 15 sekunddan keyin tugmani ochish
+                setTimeout(() => setCanComplete(true), 15000);
               }}
             />
           ) : lesson.video_url && isDirectVideo(lesson.video_url) ? (
