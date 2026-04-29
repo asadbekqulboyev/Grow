@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { CertificateTemplate } from './CertificateTemplate';
-import html2canvas from 'html2canvas';
+
+// Sertifikat rasmlarini keshlaydigan global cache (sahifa bo'ylab saqlanadi)
+const certImageCache = new Map<string, string>();
 
 interface CertificatePreviewProps {
   id: string;
@@ -17,12 +19,34 @@ export function CertificatePreview({ id, studentName, courseName, date, classNam
   const [imageUrl, setImageUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Unikal kalit — cache uchun
+  const cacheKey = `cert_${id}_${studentName}_${courseName}`;
+
   useEffect(() => {
     let cancelled = false;
 
+    // 1) Avval keshdan tekshirish
+    const cached = certImageCache.get(cacheKey);
+    if (cached) {
+      setImageUrl(cached);
+      setIsLoading(false);
+      return;
+    }
+
+    // 2) sessionStorage'dan tekshirish (sahifa yangilanganda ham saqlanadi)
+    try {
+      const stored = sessionStorage.getItem(cacheKey);
+      if (stored) {
+        certImageCache.set(cacheKey, stored);
+        setImageUrl(stored);
+        setIsLoading(false);
+        return;
+      }
+    } catch {}
+
     const capture = async () => {
       // CertificateTemplate ichidagi QR code va rasmlar renderlanishi uchun kutish
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       if (!certRef.current || cancelled) return;
 
@@ -45,7 +69,10 @@ export function CertificatePreview({ id, studentName, courseName, date, classNam
           }
         }
 
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // html2canvas dynamic import — faqat kerak bo'lganda yuklanadi (~400KB tejash)
+        const html2canvas = (await import('html2canvas')).default;
 
         const canvas = await html2canvas(certRef.current, {
           scale: 1.5,
@@ -58,7 +85,13 @@ export function CertificatePreview({ id, studentName, courseName, date, classNam
         });
 
         if (!cancelled) {
-          setImageUrl(canvas.toDataURL('image/png', 0.85));
+          const dataUrl = canvas.toDataURL('image/png', 0.85);
+          
+          // Keshga saqlash
+          certImageCache.set(cacheKey, dataUrl);
+          try { sessionStorage.setItem(cacheKey, dataUrl); } catch {}
+          
+          setImageUrl(dataUrl);
           setIsLoading(false);
         }
       } catch (err) {
@@ -69,29 +102,31 @@ export function CertificatePreview({ id, studentName, courseName, date, classNam
 
     capture();
     return () => { cancelled = true; };
-  }, [id, studentName, courseName, date]);
+  }, [id, studentName, courseName, date, cacheKey]);
 
   return (
     <>
-      {/* Yashirin CertificateTemplate — capture qilish uchun */}
-      <div
-        style={{
-          position: 'fixed',
-          top: '-9999px',
-          left: '-9999px',
-          zIndex: -100,
-          opacity: 0,
-          pointerEvents: 'none',
-        }}
-      >
-        <CertificateTemplate
-          ref={certRef}
-          id={id}
-          studentName={studentName}
-          courseName={courseName}
-          date={date}
-        />
-      </div>
+      {/* Yashirin CertificateTemplate — faqat cache bo'lmaganda render qilinadi */}
+      {!imageUrl && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '-9999px',
+            left: '-9999px',
+            zIndex: -100,
+            opacity: 0,
+            pointerEvents: 'none',
+          }}
+        >
+          <CertificateTemplate
+            ref={certRef}
+            id={id}
+            studentName={studentName}
+            courseName={courseName}
+            date={date}
+          />
+        </div>
+      )}
 
       {/* Ko'rsatiladigan rasm */}
       <div className={className}>

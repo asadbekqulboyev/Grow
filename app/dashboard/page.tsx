@@ -15,29 +15,30 @@ export default async function Page() {
     redirect('/login');
   }
 
-  // Fetch user coins (with timestamps for active days)
-  const { data: coinsData } = await supabase
-    .from('user_coins')
-    .select('amount, created_at')
-    .eq('user_id', data.user.id);
-  
+  // Barcha so'rovlarni PARALLEL bajarish (Promise.all) — tezlik ~3x oshadi
+  const [
+    { data: coinsData },
+    { data: progressData },
+    { data: allCertsData },
+  ] = await Promise.all([
+    supabase
+      .from('user_coins')
+      .select('amount, created_at')
+      .eq('user_id', data.user.id),
+    supabase
+      .from('user_progress')
+      .select('id, lesson_id, completed, completed_at')
+      .eq('user_id', data.user.id)
+      .eq('completed', true),
+    supabase
+      .from('certificates')
+      .select('*')
+      .eq('user_id', data.user.id)
+      .order('issued_at', { ascending: false }),
+  ]);
+
   const totalCoins = (coinsData || []).reduce((sum, c) => sum + (c.amount || 0), 0);
-
-  // Fetch completed lessons (with timestamps for active days)
-  const { data: progressData } = await supabase
-    .from('user_progress')
-    .select('id, lesson_id, completed, completed_at')
-    .eq('user_id', data.user.id)
-    .eq('completed', true);
-
   const completedLessonsCount = progressData?.length || 0;
-
-  // Fetch certificates (authoritative source for completed courses)
-  const { data: allCertsData } = await supabase
-    .from('certificates')
-    .select('*')
-    .eq('user_id', data.user.id)
-    .order('issued_at', { ascending: false });
 
   const completedCoursesCount = allCertsData?.length || 0;
   const latestCert = allCertsData?.[0] || null;

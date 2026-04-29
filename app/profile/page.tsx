@@ -39,34 +39,26 @@ export default function ProfilePage() {
       setUser(data.user);
       const userId = data.user.id;
 
-      // Fetch coins
-      const { data: coinsData } = await supabase
-        .from('user_coins')
-        .select('amount')
-        .eq('user_id', userId);
+      // Barcha so'rovlarni PARALLEL bajarish — tezlik ~3x oshadi
+      const [
+        { data: coinsData },
+        { data: progressData },
+        { data: certsData },
+      ] = await Promise.all([
+        supabase.from('user_coins').select('amount').eq('user_id', userId),
+        supabase.from('user_progress').select('id').eq('user_id', userId).eq('completed', true),
+        supabase.from('certificates').select('*').eq('user_id', userId).order('issued_at', { ascending: false }),
+      ]);
+
       setTotalCoins((coinsData || []).reduce((s, c) => s + (c.amount || 0), 0));
-
-      // Fetch completed lessons count
-      const { data: progressData } = await supabase
-        .from('user_progress')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('completed', true);
       setCompletedLessons(progressData?.length || 0);
-
-      // Fetch certificates (authoritative source for completed courses)
-      const { data: certsData } = await supabase
-        .from('certificates')
-        .select('*')
-        .eq('user_id', userId)
-        .order('issued_at', { ascending: false });
       setCertificates(certsData || []);
     };
 
     init();
 
-    const supabase2 = createClient();
-    const { data: authListener } = supabase2.auth.onAuthStateChange((event, session) => {
+    // Auth listener — bitta supabase client ishlatamiz (duplikat olib tashlandi)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         setUser(session?.user || null);
       } else if (event === 'SIGNED_OUT') {

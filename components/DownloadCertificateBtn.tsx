@@ -2,8 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { CertificateTemplate } from './CertificateTemplate';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 interface DownloadCertificateBtnProps {
   certData: {
@@ -20,16 +18,25 @@ interface DownloadCertificateBtnProps {
 export function DownloadCertificateBtn({ certData, className, children, autoDownload }: DownloadCertificateBtnProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
+  const [showTemplate, setShowTemplate] = useState(false);
   const certRef = useRef<HTMLDivElement>(null);
 
   const handleDownload = async () => {
-    if (!certRef.current || isGenerating) return;
+    if (isGenerating) return;
     setIsGenerating(true);
+    
+    // Template'ni faqat PDF yaratish boshlanganda renderlaymiz (lazy)
+    setShowTemplate(true);
+    
     try {
-      const element = certRef.current;
-      
       // Komponentni to'liq renderlanishi uchun kutish (QR + rasmlar)
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      if (!certRef.current) {
+        throw new Error('Template render bo\'lmadi');
+      }
+
+      const element = certRef.current;
 
       // Fon rasmini data URL ga aylantirish (CORS uchun)
       const bgImages = Array.from(element.querySelectorAll('img'));
@@ -49,7 +56,13 @@ export function DownloadCertificateBtn({ certData, className, children, autoDown
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Dynamic import — faqat kerak bo'lganda yuklanadi (~400KB tejash)
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
 
       const canvas = await html2canvas(element, {
         scale: 2,
@@ -80,6 +93,8 @@ export function DownloadCertificateBtn({ certData, className, children, autoDown
       alert('Xatolik yuz berdi. Iltimos, sahifani yangilab qayta urinib ko\'ring.');
     } finally {
       setIsGenerating(false);
+      // Template'ni olib tashlaymiz (xotira tejash)
+      setShowTemplate(false);
     }
   };
 
@@ -104,25 +119,27 @@ export function DownloadCertificateBtn({ certData, className, children, autoDown
         {isGenerating ? 'Yuklanmoqda...' : (downloaded && autoDownload ? '✅ Qayta yuklab olish' : children)}
       </button>
 
-      {/* Offscreen — PDF generatsiya uchun */}
-      <div 
-        style={{ 
-          position: 'fixed', 
-          top: '-9999px',
-          left: '-9999px',
-          zIndex: -50,
-          opacity: 0,
-          pointerEvents: 'none',
-        }}
-      >
-        <CertificateTemplate
-          ref={certRef}
-          id={certData.id}
-          studentName={certData.studentName}
-          courseName={certData.courseName}
-          date={certData.date}
-        />
-      </div>
+      {/* Offscreen — faqat PDF generatsiya paytida renderlanadi (lazy) */}
+      {showTemplate && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            top: '-9999px',
+            left: '-9999px',
+            zIndex: -50,
+            opacity: 0,
+            pointerEvents: 'none',
+          }}
+        >
+          <CertificateTemplate
+            ref={certRef}
+            id={certData.id}
+            studentName={certData.studentName}
+            courseName={certData.courseName}
+            date={certData.date}
+          />
+        </div>
+      )}
     </>
   );
 }

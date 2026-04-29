@@ -12,20 +12,38 @@ interface UserData {
   full_name?: string;
 }
 
+// Auth holatini context orqali ulashish (duplikat auth tekshiruvni oldini olish)
+let cachedUser: UserData | null | undefined = undefined;
+let authPromise: Promise<UserData | null> | null = null;
+
+function getSharedAuthCheck(): Promise<UserData | null> {
+  if (authPromise) return authPromise;
+  
+  authPromise = (async () => {
+    const supabase = createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser) {
+      cachedUser = {
+        email: authUser.email || '',
+        avatar_url: authUser.user_metadata?.avatar_url,
+        full_name: authUser.user_metadata?.full_name,
+      };
+    } else {
+      cachedUser = null;
+    }
+    return cachedUser;
+  })();
+  
+  return authPromise;
+}
+
 export function LandingNav() {
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-      if (authUser) {
-        setUser({
-          email: authUser.email || '',
-          avatar_url: authUser.user_metadata?.avatar_url,
-          full_name: authUser.user_metadata?.full_name,
-        });
-      }
+    getSharedAuthCheck().then((result) => {
+      setUser(result);
       setIsLoading(false);
     });
   }, []);
@@ -95,9 +113,9 @@ export function HeroCTA() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsLoggedIn(!!user);
+    // Keshdan foydalanish — yangi so'rov yubormasdan
+    getSharedAuthCheck().then((result) => {
+      setIsLoggedIn(!!result);
     });
   }, []);
 

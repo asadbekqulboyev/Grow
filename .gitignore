@@ -5,10 +5,4 @@ coverage/
 *.log
 .env*
 !.env.example
-
-# Video fayllar (juda katta, GitHub limitidan oshadi)
 public/Videos/
-*.mp4
-*.webm
-*.mov
-*.avi

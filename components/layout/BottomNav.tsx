@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Compass, ShoppingBag, User, Sparkles } from 'lucide-react'
-import { motion } from 'motion/react'
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -47,19 +46,18 @@ export function BottomNav() {
               className="flex flex-col items-center relative z-10 w-16"
             >
               <div className="absolute -top-8 flex flex-col items-center">
-                <motion.div 
-                  whileTap={{ scale: 0.9 }}
-                  className={`w-14 h-14 rounded-full flex items-center justify-center border-[5px] border-white dark:border-gray-900 shadow-xl ${
+                <div 
+                  className={`w-14 h-14 rounded-full flex items-center justify-center border-[5px] border-white dark:border-gray-900 shadow-xl transition-all duration-200 active:scale-90 ${
                     active ? 'bg-gradient-to-tr from-[#1b3d16] to-[#0d210b] dark:from-[#2D5A27] dark:to-[#487343]' : 'bg-gradient-to-tr from-[#A8E6CF] to-[#2D5A27]'
                   }`}
                 >
-                  <motion.div
-                    animate={{ rotate: active ? 180 : 0 }}
-                    transition={{ type: "spring", stiffness: 200, damping: 10 }}
+                  <div
+                    className="transition-transform duration-300"
+                    style={{ transform: active ? 'rotate(180deg)' : 'rotate(0deg)' }}
                   >
                     <Icon className={`w-6 h-6 ${active ? 'text-white' : 'text-gray-900'}`} />
-                  </motion.div>
-                </motion.div>
+                  </div>
+                </div>
                 <span className={`text-[10px] font-bold mt-1 ${active ? 'text-[#2D5A27] dark:text-[#A8E6CF]' : 'text-gray-500 dark:text-gray-400'}`}>
                   {item.name}
                 </span>
@@ -75,17 +73,13 @@ export function BottomNav() {
             className="flex flex-col items-center p-2 relative w-16"
           >
             {active && (
-              <motion.div 
-                layoutId="bottom-nav-indicator"
-                className="absolute inset-0 bg-[#A8E6CF]/20 dark:bg-[#A8E6CF]/10 rounded-xl"
-                initial={false}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              <div 
+                className="absolute inset-0 bg-[#A8E6CF]/20 dark:bg-[#A8E6CF]/10 rounded-xl transition-all duration-300"
               />
             )}
-            <motion.div
-              whileTap={{ scale: 0.85 }}
-              animate={active ? { y: -4 } : { y: 0 }}
-              className="relative z-10 flex flex-col items-center"
+            <div
+              className="relative z-10 flex flex-col items-center transition-transform duration-200 active:scale-85"
+              style={{ transform: active ? 'translateY(-4px)' : 'translateY(0)' }}
             >
               <Icon 
                 className={`w-6 h-6 mb-1 transition-colors ${
@@ -99,7 +93,7 @@ export function BottomNav() {
               >
                 {item.name}
               </span>
-            </motion.div>
+            </div>
           </Link>
         );
       })}
