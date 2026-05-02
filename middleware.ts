@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const protectedRoutes = ['/dashboard', '/courses', '/ai-mentor', '/profile', '/admin']
+const protectedRoutes = ['/dashboard', '/courses', '/ai-mentor', '/profile', '/admin', '/onboarding', '/shop', '/leaderboard']
 const adminEmail = process.env.ADMIN_EMAIL || 'asadbekqulboyev@gmail.com'
 
 export async function middleware(request: NextRequest) {

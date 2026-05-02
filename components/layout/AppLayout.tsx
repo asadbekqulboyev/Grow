@@ -6,7 +6,7 @@ import { BottomNav } from '@/components/layout/BottomNav';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthOrLanding = pathname === '/' || pathname === '/login';
+  const isAuthOrLanding = pathname === '/' || pathname === '/login' || pathname === '/onboarding';
 
   return (
     <>

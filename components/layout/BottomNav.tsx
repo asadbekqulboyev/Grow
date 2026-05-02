@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Compass, ShoppingBag, User, Sparkles } from 'lucide-react'
+import { Home, Compass, Trophy, User, Sparkles } from 'lucide-react'
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -22,9 +22,9 @@ export function BottomNav() {
 
   const navItems = [
     { name: 'Asosiy', path: '/dashboard', icon: Home },
-    { name: 'Kurslar', path: '/courses', icon: Compass },
+    { name: 'Bosqichlar', path: '/courses', icon: Compass },
     { name: 'AI Mentor', path: '/ai-mentor', icon: Sparkles, isCenter: true },
-    { name: 'Do\'kon', path: '/shop', icon: ShoppingBag },
+    { name: 'Reyting', path: '/leaderboard', icon: Trophy },
     { name: 'Profil', path: '/profile', icon: User },
   ];
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { Settings, Bell, Lock, LogOut, Award, CheckCircle, ChevronRight, Moon, Sun, Monitor, Camera, Loader2 } from 'lucide-react';
+import { Settings, Bell, Lock, LogOut, Award, CheckCircle, ChevronRight, Moon, Sun, Monitor, Camera, Loader2, Flame, Target, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -22,6 +22,10 @@ export default function ProfilePage() {
   const [totalCoins, setTotalCoins] = useState(0);
   const [completedLessons, setCompletedLessons] = useState(0);
   const [certificates, setCertificates] = useState<any[]>([]);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [userGoal, setUserGoal] = useState<string | null>(null);
+  const [userLevel, setUserLevel] = useState(1);
+  const [totalXp, setTotalXp] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -44,15 +48,25 @@ export default function ProfilePage() {
         { data: coinsData },
         { data: progressData },
         { data: certsData },
+        { data: profileData },
+        { data: streakData },
+        { data: levelData },
       ] = await Promise.all([
         supabase.from('user_coins').select('amount').eq('user_id', userId),
         supabase.from('user_progress').select('id').eq('user_id', userId).eq('completed', true),
         supabase.from('certificates').select('*').eq('user_id', userId).order('issued_at', { ascending: false }),
+        supabase.from('user_profiles').select('goal').eq('user_id', userId).single(),
+        supabase.from('user_streaks').select('current_streak').eq('user_id', userId).single(),
+        supabase.from('user_levels').select('current_level, total_xp').eq('user_id', userId).single(),
       ]);
 
       setTotalCoins((coinsData || []).reduce((s, c) => s + (c.amount || 0), 0));
       setCompletedLessons(progressData?.length || 0);
       setCertificates(certsData || []);
+      setUserGoal(profileData?.goal || null);
+      setCurrentStreak(streakData?.current_streak || 0);
+      setUserLevel(levelData?.current_level || 1);
+      setTotalXp(levelData?.total_xp || 0);
     };
 
     init();
@@ -172,7 +186,17 @@ export default function ProfilePage() {
              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{user?.user_metadata?.full_name || 'Foydalanuvchi'}</h3>
              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4 sm:mb-5">{user?.email}</p>
              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#A8E6CF]/20 text-[#2D5A27] dark:text-[#A8E6CF] rounded-full text-xs font-bold uppercase tracking-wider">
-               <Award className="w-4 h-4" /> 🌳 Level {treeLevel}: {['Urug\'', 'Nihol', 'O\'sib borayotgan', 'Yosh daraxt', 'Bahaybat daraxt'][treeLevel - 1]}
+               <TrendingUp className="w-4 h-4" /> Level {userLevel}: {['Yangi boshlovchi', 'Faol o\'quvchi', 'Tajribali', 'Ekspert', 'Usta'][userLevel - 1] || 'Yangi'}
+             </div>
+             {/* XP Progress */}
+             <div className="w-full mt-4">
+               <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+                 <span>{totalXp} XP</span>
+                 <span>{[100, 300, 600, 1000, 1000][userLevel - 1]} XP</span>
+               </div>
+               <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
+                 <div className="h-full rounded-full bg-gradient-to-r from-[#2D5A27] to-[#A8E6CF] transition-all duration-700" style={{ width: `${Math.min((totalXp / [100, 300, 600, 1000, 1000][userLevel - 1]) * 100, 100)}%` }}></div>
+               </div>
              </div>
           </div>
 
@@ -183,8 +207,20 @@ export default function ProfilePage() {
               Statistika
             </h4>
             <div className="space-y-4">
+               {currentStreak > 0 && (
+                 <div className="flex justify-between items-center pb-4 border-b border-gray-50 dark:border-gray-800">
+                   <span className="text-gray-500 dark:text-gray-400 text-sm font-medium flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-500" />Streak</span>
+                   <span className="font-bold text-orange-500 text-lg">{currentStreak} kun 🔥</span>
+                 </div>
+               )}
+               {userGoal && (
+                 <div className="flex justify-between items-center pb-4 border-b border-gray-50 dark:border-gray-800">
+                   <span className="text-gray-500 dark:text-gray-400 text-sm font-medium flex items-center gap-1.5"><Target className="w-4 h-4 text-[#2D5A27]" />Maqsad</span>
+                   <span className="font-bold text-[#2D5A27] dark:text-[#A8E6CF] text-sm">{{ grants: 'Grantlar', soft_skill: 'Soft skill', hard_skill: 'Hard skill', language: 'Til o\'rganish', startup: 'Startup' }[userGoal] || userGoal}</span>
+                 </div>
+               )}
                <div className="flex justify-between items-center pb-4 border-b border-gray-50 dark:border-gray-800">
-                 <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">Tugallangan kurslar</span>
+                 <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">Tugallangan bosqichlar</span>
                  <span className="font-bold text-gray-900 dark:text-gray-100 text-lg">{certificates.length}</span>
                </div>
                <div className="flex justify-between items-center pb-4 border-b border-gray-50 dark:border-gray-800">

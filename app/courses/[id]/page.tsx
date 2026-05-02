@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Clock, PlayCircle, Coins, Lock, CheckCircle, BookOpen, Award } from 'lucide-react';
+import { ArrowLeft, Clock, PlayCircle, Coins, Lock, CheckCircle, BookOpen, Award, Send, FileText, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { DownloadCertificateBtn } from '@/components/DownloadCertificateBtn';
@@ -40,6 +40,12 @@ export default function CourseDetailsPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [certificate, setCertificate] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
+  const [practicalTasks, setPracticalTasks] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [practicalAnswer, setPracticalAnswer] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [hasQuizPassed, setHasQuizPassed] = useState(false);
+  const [hasPracticalDone, setHasPracticalDone] = useState(false);
 
   useEffect(() => {
     if (!courseId) return;
@@ -104,6 +110,28 @@ export default function CourseDetailsPage() {
               }
             }
           }
+
+          // Practical tasks va submissions olish
+          try {
+            const ptRes = await fetch(`/api/practical-task?course_id=${courseId}`);
+            const ptData = await ptRes.json();
+            if (isMounted) {
+              setPracticalTasks(ptData.tasks || []);
+              setSubmissions(ptData.submissions || []);
+              setHasPracticalDone((ptData.submissions || []).length > 0);
+            }
+          } catch {}
+
+          // Quiz natijasi tekshirish
+          const { data: quizData } = await supabase
+            .from('user_coins')
+            .select('id')
+            .eq('user_id', currentUser.id)
+            .like('reason', `%${courseId}%`)
+            .limit(1);
+          if (isMounted) {
+            setHasQuizPassed((quizData?.length || 0) > 0);
+          }
         }
       } catch (err) {
         console.error('Kurs ma\'lumotlarini yuklashda xatolik:', err);
@@ -119,6 +147,28 @@ export default function CourseDetailsPage() {
     };
   }, [courseId]);
 
+  const submitPractical = async (taskId: string) => {
+    if (!practicalAnswer.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/practical-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id: taskId, course_id: courseId, answer: practicalAnswer }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSubmissions(prev => [...prev, data.submission]);
+        setHasPracticalDone(true);
+        setPracticalAnswer('');
+      }
+    } catch (e) {
+      console.error('Submit error:', e);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 min-h-screen bg-[#F3F4F6] dark:bg-[#111827] flex items-center justify-center transition-colors">
@@ -130,13 +180,13 @@ export default function CourseDetailsPage() {
   if (!course) {
     return (
       <div className="flex-1 min-h-screen bg-[#F3F4F6] dark:bg-[#111827] flex flex-col items-center justify-center p-6 text-center transition-colors">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Kurs topilmadi</h2>
-        <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md">Kechirasiz, siz qidirayotgan kurs mavjud emas yoki o&apos;chirilgan bo&apos;lishi mumkin.</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Bosqich topilmadi</h2>
+        <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md">Kechirasiz, siz qidirayotgan bosqich mavjud emas yoki o&apos;chirilgan bo&apos;lishi mumkin.</p>
         <button 
           onClick={() => router.push('/courses')}
           className="bg-[#2D5A27] hover:bg-[#1f421a] dark:bg-[#A8E6CF] dark:hover:bg-[#86d4b8] text-white dark:text-[#111827] px-6 py-3 rounded-xl font-bold transition-colors"
         >
-          Kurslarga qaytish
+          Bosqichlarga qaytish
         </button>
       </div>
     );
@@ -213,7 +263,7 @@ export default function CourseDetailsPage() {
         <div className="flex-1 min-w-0 w-full">
           <div className="bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800">
             <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 flex items-center justify-between md:justify-start">
-              Darslar ro&apos;yxati
+              Bosqich tarkibi
               <span className="md:ml-3 text-xs md:text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 py-1.5 px-3 rounded-full">
                 {lessons.length} ta dars
               </span>
@@ -259,12 +309,78 @@ export default function CourseDetailsPage() {
               </div>
             )}
           </div>
+
+          {/* Amaliy Topshiriq */}
+          {practicalTasks.length > 0 && (
+            <div className="bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-sm border border-gray-100 dark:border-gray-800 mt-6">
+              <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#2D5A27] dark:text-[#A8E6CF]" />
+                Amaliy topshiriq
+              </h2>
+              {practicalTasks.map((task) => {
+                const existing = submissions.find((s: any) => s.task_id === task.id);
+                return (
+                  <div key={task.id} className="mb-4 last:mb-0">
+                    <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-1">{task.title}</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{task.description}</p>
+                    
+                    {existing ? (
+                      <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          <span className="text-sm font-bold text-green-800 dark:text-green-300">Topshirildi</span>
+                        </div>
+                        <p className="text-xs text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 p-3 rounded-lg">{existing.answer}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <textarea
+                          value={practicalAnswer}
+                          onChange={(e) => setPracticalAnswer(e.target.value)}
+                          placeholder="Javobingizni yozing..."
+                          className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-[#A8E6CF] outline-none resize-none min-h-[100px]"
+                        />
+                        <button
+                          onClick={() => submitPractical(task.id)}
+                          disabled={submitting || !practicalAnswer.trim()}
+                          className="flex items-center justify-center gap-2 w-full py-3 bg-[#2D5A27] hover:bg-[#1f421a] dark:bg-[#A8E6CF] dark:hover:bg-[#86d4b8] text-white dark:text-[#111827] rounded-xl font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                          {submitting ? 'Yuborilmoqda...' : 'Topshirish'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Sertifikat olish shartlari */}
+          {isCompleted && !certificate && (
+            <div className="bg-white dark:bg-gray-900 rounded-2xl md:rounded-3xl p-4 md:p-6 shadow-sm border border-gray-100 dark:border-gray-800 mt-6">
+              <h3 className="font-bold text-sm text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+                Sertifikat olish shartlari
+              </h3>
+              <div className="space-y-2">
+                <div className={`flex items-center gap-2 text-sm ${hasQuizPassed ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
+                  {hasQuizPassed ? <CheckCircle className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                  <span className="font-medium">Testdan o&apos;tish</span>
+                </div>
+                <div className={`flex items-center gap-2 text-sm ${hasPracticalDone ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
+                  {hasPracticalDone ? <CheckCircle className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                  <span className="font-medium">Amaliy topshiriqni bajarish</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Right Column: Sticky Sidebar Info */}
         <div className="w-full lg:w-[320px] shrink-0">
           <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 sticky top-28">
-            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">Kurs haqida</h3>
+            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-4">Bosqich haqida</h3>
             
             <ul className="space-y-4 mb-8">
                <li className="flex gap-3 text-sm text-gray-600 dark:text-gray-300">
@@ -291,8 +407,8 @@ export default function CourseDetailsPage() {
                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mx-auto mb-3">
                       <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
                    </div>
-                   <h4 className="font-bold text-green-900 dark:text-green-100 text-sm mb-1">Kurs o'zlashtirildi!</h4>
-                   <p className="text-[10px] text-green-700 dark:text-green-400">Siz ushbu kursni muvaffaqiyatli yakunlab bo'lgansiz.</p>
+                   <h4 className="font-bold text-green-900 dark:text-green-100 text-sm mb-1">Bosqich o'zlashtirildi!</h4>
+                   <p className="text-[10px] text-green-700 dark:text-green-400">Siz ushbu bosqichni muvaffaqiyatli yakunlab bo'lgansiz.</p>
                 </div>
                 
                 {certificate ? (
@@ -331,7 +447,7 @@ export default function CourseDetailsPage() {
                 className="w-full bg-[#2D5A27] hover:bg-[#1f421a] dark:bg-[#A8E6CF] dark:hover:bg-[#86d4b8] text-white dark:text-[#111827] py-4 rounded-xl font-bold transition-colors mb-3 flex items-center justify-center gap-2"
               >
                 <PlayCircle className="w-5 h-5" />
-                Kursni boshlash
+                Bosqichni boshlash
               </Link>
             ) : (
               <button disabled className="w-full bg-gray-200 dark:bg-gray-800 text-gray-400 py-4 rounded-xl font-bold cursor-not-allowed mb-3 flex items-center justify-center gap-2">
@@ -341,7 +457,7 @@ export default function CourseDetailsPage() {
             )}
             {!isCompleted && (
               <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                Kursni to&apos;liq tugatib {course.reward_coins} tanga yutib oling
+                Bosqichni to&apos;liq tugatib {course.reward_coins} tanga yutib oling
               </p>
             )}
           </div>

@@ -1,6 +1,8 @@
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { DownloadCertificateBtn } from '@/components/DownloadCertificateBtn';
 import { CertificatePreview } from '@/components/CertificatePreview';
+import DailyTasks from '@/components/DailyTasks';
+import ProgressSection from '@/components/ProgressSection';
 import Link from 'next/link';
 import Image from 'next/image';
 import { UserCircle } from 'lucide-react';
@@ -99,8 +101,15 @@ export default async function Page() {
       </header>
 
       {/* Dashboard Content */}
-      <div className="px-[15px] sm:px-8 py-4 sm:py-8 grid grid-cols-1 md:grid-cols-12 gap-6 pb-6 sm:pb-24">
+      <div className="px-[15px] sm:px-8 py-4 sm:py-8 flex flex-col gap-6 pb-6 sm:pb-24">
         
+        {/* Daily Tasks: Streak + Progress + Vazifalar */}
+        <DailyTasks />
+
+        {/* Maqsad Progressi */}
+        <ProgressSection />
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Left Column: Growth Tree */}
         <div className="md:col-span-12 lg:col-span-7">
           <div className="bg-gradient-to-b from-white to-[#f8fdf7] dark:from-gray-800 dark:to-gray-800 rounded-2xl sm:rounded-[32px] p-5 sm:p-8 h-[380px] sm:h-[480px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center relative transition-colors duration-300 overflow-hidden">
@@ -319,7 +328,7 @@ export default async function Page() {
               ></div>
             </div>
             <p className="text-xs text-center mt-3 text-gray-400 dark:text-gray-500 transition-colors font-medium">
-              {coursesToNext > 0 ? `Keyingi bosqichgacha ${coursesToNext} ta kurs tugatish kerak` : '🎉 Maksimal daraja — Tabriklaymiz!'}
+              {coursesToNext > 0 ? `Keyingi bosqichgacha ${coursesToNext} ta bosqich tugatish kerak` : '🎉 Maksimal daraja — Tabriklaymiz!'}
             </p>
           </div>
         </div>
@@ -332,7 +341,7 @@ export default async function Page() {
                <p className="text-xl sm:text-2xl font-bold text-[#2D5A27] dark:text-[#A8E6CF] transition-colors">{uniqueDays} <span className="text-sm font-semibold opacity-70">kun</span></p>
              </div>
              <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl sm:rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
-               <p className="text-gray-400 dark:text-gray-500 text-xs font-bold uppercase mb-1 transition-colors">Tugatilgan kurslar</p>
+               <p className="text-gray-400 dark:text-gray-500 text-xs font-bold uppercase mb-1 transition-colors">Tugatilgan bosqichlar</p>
                <p className="text-xl sm:text-2xl font-bold text-[#2D5A27] dark:text-[#A8E6CF] transition-colors">{completedCoursesCount} <span className="text-sm font-semibold opacity-70">ta</span></p>
              </div>
              <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl sm:rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
@@ -386,6 +395,7 @@ export default async function Page() {
             )}
           </div>
         </div>
+        </div>
       </div>
       
       {/* Active Course Bar */}
@@ -393,7 +403,7 @@ export default async function Page() {
           <div className="flex items-center gap-3 sm:gap-4 flex-1">
               <Link href="/courses" className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center font-bold text-[#2D5A27] dark:text-[#A8E6CF] shadow-sm tracking-tighter transition-colors">▶</Link>
               <div className="flex-1 min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold text-[#2D5A27]/60 dark:text-[#A8E6CF]/60 uppercase tracking-wider mb-0.5 transition-colors">Kurslar</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold text-[#2D5A27]/60 dark:text-[#A8E6CF]/60 uppercase tracking-wider mb-0.5 transition-colors">Bosqichlar</p>
                   <p className="font-bold text-[#2D5A27] dark:text-white text-xs sm:text-sm truncate transition-colors">O&apos;rganishni davom eting</p>
               </div>
           </div>

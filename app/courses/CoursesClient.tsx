@@ -64,7 +64,7 @@ export function CoursesClient({ initialCourses }: CoursesClientProps) {
       {/* Header */}
       <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-[15px] sm:px-8 z-40 sticky top-0 transition-colors duration-300">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg sm:text-xl font-bold dark:text-white truncate">Kurslar</h2>
+          <h2 className="text-lg sm:text-xl font-bold dark:text-white truncate">Bosqichlar</h2>
         </div>
         <div className="flex items-center gap-3 sm:gap-6 shrink-0">
           <LanguageSwitcher />
@@ -79,7 +79,7 @@ export function CoursesClient({ initialCourses }: CoursesClientProps) {
             <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 
               type="text" 
-              placeholder="Kurs yoki mavzu qidiring..." 
+              placeholder="Bosqich yoki mavzu qidiring..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm focus:ring-2 focus:ring-[#A8E6CF] dark:text-white placeholder-gray-400 outline-none transition-shadow"
@@ -109,7 +109,7 @@ export function CoursesClient({ initialCourses }: CoursesClientProps) {
             <Search className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Natija topilmadi</h3>
             <p className="text-gray-500 dark:text-gray-400 max-w-md">
-              &quot;{searchQuery}&quot; bo&apos;yicha kurs topilmadi. Boshqa kalit so&apos;z bilan qidirib ko&apos;ring.
+              &quot;{searchQuery}&quot; bo&apos;yicha bosqich topilmadi. Boshqa kalit so&apos;z bilan qidirib ko&apos;ring.
             </p>
           </div>
         ) : (
@@ -163,7 +163,7 @@ export function CoursesClient({ initialCourses }: CoursesClientProps) {
                   <div className="mt-auto">
                     <Link href={`/courses/${course.id}`} className="w-full py-3 px-4 bg-gray-50 hover:bg-[#A8E6CF]/20 dark:bg-gray-800 dark:hover:bg-[#A8E6CF]/10 text-[#2D5A27] dark:text-[#A8E6CF] rounded-xl font-bold flex items-center justify-center gap-2 transition-colors border border-gray-100 dark:border-gray-700">
                       <PlayCircle className="w-5 h-5" />
-                      Boshlash
+                      Bosqichni boshlash
                     </Link>
                   </div>
                 </div>
