@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Settings, BookOpen, Users, Video, LogOut, Plus, Edit2, Trash2, X, HelpCircle, Youtube, Eye, Coins, Upload, Loader2, FileSpreadsheet, AlertTriangle, Award } from 'lucide-react';
+import { Settings, BookOpen, Users, Video, LogOut, Plus, Edit2, Trash2, X, HelpCircle, Youtube, Eye, Coins, Upload, Loader2, FileSpreadsheet, AlertTriangle, Award, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Toaster, toast } from 'react-hot-toast';
@@ -26,13 +26,14 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState('');
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'courses' | 'lessons' | 'quizzes' | 'users'>('courses');
+  const [activeTab, setActiveTab] = useState<'courses' | 'lessons' | 'quizzes' | 'users' | 'shop'>('courses');
   const [courses, setCourses] = useState<any[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, title: string, onConfirm: () => void} | null>(null);
+  const [shopItems, setShopItems] = useState<any[]>([]);
   const supabase = createClient();
 
   // Course Form State
@@ -166,6 +167,93 @@ export default function AdminPanel() {
     setIsLoading(false);
   };
 
+  // --- Shop Items ---
+  const [showShopForm, setShowShopForm] = useState(false);
+  const [editingShopId, setEditingShopId] = useState<string | null>(null);
+  const [isUploadingShopImage, setIsUploadingShopImage] = useState(false);
+  const [shopForm, setShopForm] = useState({
+    name: '', description: '', price: 100, icon_name: 'Gift', color: 'from-amber-400 to-orange-500', available: true, order_index: 1, image_url: ''
+  });
+
+  const handleShopImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingShopImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `shop_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('shop-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('shop-images')
+        .getPublicUrl(fileName);
+
+      setShopForm({ ...shopForm, image_url: publicUrl });
+    } catch (err: any) {
+      toast.error("Rasm yuklashda xatolik. Supabase'da 'shop-images' nomli Public bucket borligiga ishonch hosil qiling.");
+    } finally {
+      setIsUploadingShopImage(false);
+    }
+  };
+
+  const fetchShopItems = async () => {
+    setIsLoading(true);
+    const { data } = await supabase.from('shop_items').select('*').order('order_index', { ascending: true });
+    setShopItems(data || []);
+    setIsLoading(false);
+  };
+
+  const openShopForm = (item?: any) => {
+    if (item) {
+      setEditingShopId(item.id);
+      setShopForm({
+        name: item.name, description: item.description || '', price: item.price,
+        icon_name: item.icon_name || 'Gift', color: item.color || 'from-amber-400 to-orange-500',
+        available: item.available !== false, order_index: item.order_index || 1, image_url: item.image_url || ''
+      });
+    } else {
+      setEditingShopId(null);
+      const maxOrder = shopItems.length > 0 ? Math.max(...shopItems.map(s => s.order_index || 0)) : 0;
+      setShopForm({ name: '', description: '', price: 100, icon_name: 'Gift', color: 'from-amber-400 to-orange-500', available: true, order_index: maxOrder + 1, image_url: '' });
+    }
+    setShowShopForm(true);
+  };
+
+  const saveShopItem = async () => {
+    try {
+      if (editingShopId) {
+        const { error } = await supabase.from('shop_items').update(shopForm).eq('id', editingShopId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('shop_items').insert([shopForm]);
+        if (error) throw error;
+      }
+      setShowShopForm(false);
+      fetchShopItems();
+      toast.success('Mahsulot saqlandi!');
+    } catch (err: any) {
+      toast.error('Saqlashda xatolik: ' + err.message);
+    }
+  };
+
+  const deleteShopItem = async (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Ushbu mahsulotni rostdan ham o\'chirmoqchimisiz?',
+      onConfirm: async () => {
+        await supabase.from('shop_items').delete().eq('id', id);
+        toast.success('Mahsulot o\'chirildi!');
+        fetchShopItems();
+      }
+    });
+  };
+
   const changeUserRole = async (userId: string, newRole: string) => {
     setIsLoading(true);
     const { error } = await supabase.rpc('set_user_role', { target_user_id: userId, new_role: newRole });
@@ -208,6 +296,7 @@ export default function AdminPanel() {
         fetchLessons();
       }
       if (activeTab === 'users') fetchUsers();
+      if (activeTab === 'shop') fetchShopItems();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, isAuthenticated, selectedCourseId, selectedLessonIdForFilter]);
@@ -503,6 +592,10 @@ export default function AdminPanel() {
           <Users className="w-5 h-5" />
           Foydalanuvchilar
         </button>
+        <button onClick={() => setActiveTab('shop')} className={`flex items-center gap-2 px-5 py-3 rounded-t-xl font-medium transition-colors ${activeTab === 'shop' ? 'bg-white dark:bg-gray-900 text-[#2D5A27] dark:text-[#A8E6CF] border-t-2 border-[#2D5A27] dark:border-[#A8E6CF]' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 whitespace-nowrap'}`}>
+          <ShoppingBag className="w-5 h-5" />
+          Do&apos;kon
+        </button>
       </div>
 
       {/* Courses Tab Content */}
@@ -787,6 +880,74 @@ export default function AdminPanel() {
         </div>
       )}
 
+      {/* Shop Tab Content */}
+      {activeTab === 'shop' && (
+        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold dark:text-white">Do&apos;kon mahsulotlari ({shopItems.length})</h2>
+            <button onClick={() => openShopForm()} className="flex items-center gap-2 bg-[#2D5A27] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#1f421a] transition-colors">
+              <Plus className="w-4 h-4" />
+              Yangi mahsulot
+            </button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium">
+                <tr>
+                  <th className="px-4 py-3 rounded-tl-xl text-center w-16">Tartib</th>
+                  <th className="px-4 py-3">Nomi</th>
+                  <th className="px-4 py-3">Tavsifi</th>
+                  <th className="px-4 py-3 text-center">Narxi</th>
+                  <th className="px-4 py-3 text-center">Holat</th>
+                  <th className="px-4 py-3 text-center">Icon</th>
+                  <th className="px-4 py-3 rounded-tr-xl text-right">Amallar</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {shopItems.length === 0 && !isLoading && (
+                  <tr>
+                    <td colSpan={7} className="py-10 text-center text-gray-500">Hali mahsulot qo&apos;shilmagan</td>
+                  </tr>
+                )}
+                {shopItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <td className="px-4 py-3 font-bold text-center text-gray-500">{item.order_index}</td>
+                    <td className="px-4 py-3 font-medium dark:text-white">{item.name}</td>
+                    <td className="px-4 py-3 text-gray-500 truncate max-w-[200px]">{item.description}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 font-bold text-xs">
+                        <Coins className="w-3.5 h-3.5" /> {item.price}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${item.available ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                        {item.available ? 'Faol' : 'O\'chiq'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {item.image_url ? (
+                        <div className="w-10 h-10 relative rounded-lg overflow-hidden mx-auto border border-gray-200 dark:border-gray-700">
+                          <Image src={item.image_url} alt={item.name} fill className="object-cover" />
+                        </div>
+                      ) : (
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.color} mx-auto flex items-center justify-center`}>
+                          <span className="text-white text-xs font-bold">{item.icon_name?.[0] || '?'}</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 flex justify-end gap-2 text-right">
+                      <button onClick={() => openShopForm(item)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => deleteShopItem(item.id)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
 
       {/* --- FORMS/MODALS --- */}
 
@@ -1043,6 +1204,111 @@ export default function AdminPanel() {
               <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/30">
                  <button onClick={() => setShowQuizForm(false)} className="px-5 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 font-medium">Bekor qilish</button>
                  <button onClick={saveQuiz} className="bg-[#2D5A27] text-white px-5 py-2.5 rounded-xl font-medium">Saqlash</button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Shop Item Form Modal */}
+      {showShopForm && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+           <div className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                 <h3 className="font-bold text-lg dark:text-white">{editingShopId ? 'Mahsulotni tahrirlash' : 'Yangi mahsulot qo\'shish'}</h3>
+                 <button onClick={() => setShowShopForm(false)} className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"><X className="w-5 h-5"/></button>
+              </div>
+              <div className="p-6 overflow-y-auto space-y-4">
+                 <div>
+                   <label className="block text-sm font-medium mb-1 dark:text-gray-300">Mahsulot nomi</label>
+                   <input type="text" value={shopForm.name} onChange={e => setShopForm({...shopForm, name: e.target.value})} placeholder="Masalan: Premium Badge" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                 </div>
+                 <div>
+                   <label className="block text-sm font-medium mb-1 dark:text-gray-300">Tavsifi</label>
+                   <textarea rows={2} value={shopForm.description} onChange={e => setShopForm({...shopForm, description: e.target.value})} placeholder="Qisqacha tavsif..." className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1 dark:text-gray-300">Narxi (tanga)</label>
+                      <input type="number" value={shopForm.price} onChange={e => setShopForm({...shopForm, price: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 dark:text-gray-300">Tartib</label>
+                      <input type="number" value={shopForm.order_index} onChange={e => setShopForm({...shopForm, order_index: Number(e.target.value)})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                    </div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1 dark:text-gray-300">Icon nomi</label>
+                      <select value={shopForm.icon_name} onChange={e => setShopForm({...shopForm, icon_name: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]">
+                        <option value="Crown">Crown 👑</option>
+                        <option value="Sparkles">Sparkles ✨</option>
+                        <option value="Gift">Gift 🎁</option>
+                        <option value="ShoppingBag">ShoppingBag 🛍</option>
+                        <option value="Lock">Lock 🔒</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 dark:text-gray-300">Rang (gradient)</label>
+                      <select value={shopForm.color} onChange={e => setShopForm({...shopForm, color: e.target.value})} className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]">
+                        <option value="from-amber-400 to-orange-500">🟠 Oltin</option>
+                        <option value="from-purple-400 to-indigo-500">🟣 Binafsha</option>
+                        <option value="from-pink-400 to-rose-500">🩷 Pushti</option>
+                        <option value="from-emerald-400 to-teal-500">🟢 Yashil</option>
+                        <option value="from-blue-400 to-cyan-500">🔵 Ko&apos;k</option>
+                        <option value="from-red-400 to-rose-600">🔴 Qizil</option>
+                        <option value="from-gray-600 to-gray-800">⚫ Qora</option>
+                      </select>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                   <input type="checkbox" checked={shopForm.available} onChange={e => setShopForm({...shopForm, available: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-[#2D5A27] focus:ring-[#A8E6CF]" />
+                   <div>
+                     <label className="text-sm font-medium dark:text-gray-300">Faol (sotuvda)</label>
+                     <p className="text-xs text-gray-400">O&apos;chirilsa, foydalanuvchilarga ko&apos;rinmaydi</p>
+                   </div>
+                 </div>
+                 
+                 <div>
+                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">Rasm Yuklash (Ixtiyoriy)</label>
+                    <div className="flex flex-col gap-3">
+                      {shopForm.image_url && (
+                        <div className="relative w-full h-32 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                          <Image src={shopForm.image_url} alt="Joylanayotgan rasm" fill className="object-contain" />
+                        </div>
+                      )}
+                      <div className="flex gap-2 items-center">
+                        <label className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl cursor-pointer transition-colors w-1/3 shrink-0">
+                          {isUploadingShopImage ? <Loader2 className="w-5 h-5 animate-spin text-gray-500" /> : <Upload className="w-5 h-5 text-gray-500" />}
+                          <span className="text-sm font-medium dark:text-gray-300">{isUploadingShopImage ? 'Yuklanmoqda...' : 'Yuklash'}</span>
+                          <input type="file" accept="image/*" className="hidden" onChange={handleShopImageUpload} disabled={isUploadingShopImage} />
+                        </label>
+                        <span className="text-xs text-gray-400">yoki</span>
+                        <input type="text" value={shopForm.image_url} onChange={e => setShopForm({...shopForm, image_url: e.target.value})} placeholder="https://" className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-[#A8E6CF]" />
+                      </div>
+                    </div>
+                  </div>
+
+                 {/* Preview */}
+                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                   {shopForm.image_url ? (
+                      <div className="h-32 relative bg-white">
+                        <Image src={shopForm.image_url} alt="Preview" fill className="object-cover" />
+                      </div>
+                   ) : (
+                      <div className={`h-20 bg-gradient-to-br ${shopForm.color} flex items-center justify-center`}>
+                        <span className="text-white text-2xl">{ shopForm.icon_name === 'Crown' ? '👑' : shopForm.icon_name === 'Sparkles' ? '✨' : shopForm.icon_name === 'Gift' ? '🎁' : '🛍' }</span>
+                      </div>
+                   )}
+                   <div className="p-3 bg-white dark:bg-gray-900">
+                     <p className="font-bold text-sm dark:text-white">{shopForm.name || 'Mahsulot nomi'}</p>
+                     <p className="text-xs text-gray-400 mt-0.5">{shopForm.description || 'Tavsif...'}</p>
+                     <p className="text-xs font-bold text-yellow-600 mt-1">💰 {shopForm.price} tanga</p>
+                   </div>
+                 </div>
+              </div>
+              <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/30">
+                 <button onClick={() => setShowShopForm(false)} className="px-5 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 font-medium">Bekor qilish</button>
+                 <button onClick={saveShopItem} className="bg-[#2D5A27] text-white px-5 py-2.5 rounded-xl font-medium">Saqlash</button>
               </div>
            </div>
         </div>

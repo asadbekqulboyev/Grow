@@ -74,7 +74,11 @@ export default function OnboardingFlow() {
       router.push('/dashboard');
       router.refresh();
     } catch (e: any) {
-      setError(e.message || 'Xatolik yuz berdi');
+      if (e.message === 'Failed to fetch') {
+        setError('Server bilan ulanish uzildi. Iltimos, sahifani yangilab qayta urinib ko\'ring.');
+      } else {
+        setError(e.message || 'Xatolik yuz berdi');
+      }
       setIsSubmitting(false);
     }
   };

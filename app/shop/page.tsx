@@ -26,7 +26,7 @@ export default function ShopPage() {
   const [balance, setBalance] = useState<number>(0);
   const [purchasedNames, setPurchasedNames] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [purchasingId, setPurchasingId] = useState<number | null>(null);
+  const [purchasingId, setPurchasingId] = useState<string | number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -43,8 +43,12 @@ export default function ShopPage() {
 
       const { data: coinsData } = await supabase
         .from('user_coins')
-        .select('amount, reason')
+        .select('amount')
         .eq('user_id', user.id);
+
+      // Fetch purchased items
+      const purchasesRes = await fetch('/api/shop');
+      const purchasesData = await purchasesRes.json();
 
       if (isMounted) {
         if (!itemsError && itemsData && itemsData.length > 0) {
@@ -54,19 +58,16 @@ export default function ShopPage() {
         }
 
         if (coinsData) {
-          let total = 0;
-          const pNames = new Set<string>();
-
-          coinsData.forEach(c => {
-            total += c.amount;
-            if (c.reason.startsWith('Do\'kon: ')) {
-              pNames.add(c.reason.replace('Do\'kon: ', ''));
-            }
-          });
-
+          const total = coinsData.reduce((s, c) => s + (c.amount || 0), 0);
           setBalance(total);
+        }
+
+        if (purchasesData?.purchases) {
+          const pNames = new Set<string>();
+          purchasesData.purchases.forEach((p: any) => pNames.add(p.item_name));
           setPurchasedNames(pNames);
         }
+
         setLoading(false);
       }
     };
@@ -82,25 +83,31 @@ export default function ShopPage() {
     }
 
     setPurchasingId(item.id);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
     
-    if (user) {
-      const { error } = await supabase.from('user_coins').insert({
-        user_id: user.id,
-        amount: -item.price,
-        reason: `Do'kon: ${item.name}`
+    try {
+      const res = await fetch('/api/shop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item_name: item.name,
+          item_type: 'badge', // Default for now
+          price: item.price
+        })
       });
 
-      if (!error) {
+      if (res.ok) {
         setBalance(prev => prev - item.price);
         setPurchasedNames(prev => new Set(prev).add(item.name));
         alert(`${item.name} muvaffaqiyatli xarid qilindi!`);
       } else {
-        alert("Xaridni amalga oshirishda xatolik yuz berdi.");
+        const errorData = await res.json();
+        alert(errorData.error || "Xaridni amalga oshirishda xatolik yuz berdi.");
       }
+    } catch (error) {
+      alert("Xatolik yuz berdi.");
+    } finally {
+      setPurchasingId(null);
     }
-    setPurchasingId(null);
   };
 
   return (
@@ -165,12 +172,16 @@ export default function ShopPage() {
                   </div>
                 )}
 
-                {/* Gradient top */}
-                <div className={`h-32 bg-gradient-to-br ${item.color} relative flex items-center justify-center`}>
-                  <Icon className="w-12 h-12 text-white/80" />
+                {/* Gradient top / Image */}
+                <div className={`h-40 relative flex items-center justify-center overflow-hidden ${!item.image_url ? 'bg-gradient-to-br ' + item.color : ''}`}>
+                  {item.image_url ? (
+                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Icon className="w-16 h-16 text-white/80" />
+                  )}
                   {isPurchased && (
-                    <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-full p-2">
-                       <span className="text-white font-bold text-xs">Olingan ✅</span>
+                    <div className="absolute top-4 right-4 bg-white/40 backdrop-blur-md rounded-full p-2 z-10">
+                       <span className="text-[#2D5A27] font-bold text-xs">Olingan ✅</span>
                     </div>
                   )}
                 </div>

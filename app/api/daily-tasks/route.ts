@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateDailyTasks, type GoalType } from '@/lib/daily-tasks';
 
-// GET — Bugungi tasklar ro'yxati (auto-generate if empty)
+// GET — Bugungi tasklar + tavsiyalar (suggestions)
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -14,7 +14,18 @@ export async function GET() {
 
     const today = new Date().toISOString().split('T')[0];
 
-    // Bugungi tasklar
+    // User profilini olish
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('goal')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json({ tasks: [], suggestions: [], needsOnboarding: true });
+    }
+
+    // Bugungi tasklar (foydalanuvchi o'zi qo'shganlar)
     const { data: todayTasks, error: tasksError } = await supabase
       .from('daily_tasks')
       .select('*')
@@ -27,65 +38,34 @@ export async function GET() {
       return NextResponse.json({ error: 'Tasklar yuklanmadi' }, { status: 500 });
     }
 
-    // Agar bugunga task yo'q bo'lsa — avtomatik generatsiya
-    if (!todayTasks || todayTasks.length === 0) {
-      // User profilini olish
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('goal')
-        .eq('user_id', user.id)
-        .single();
+    // Tavsiyalar generatsiya (avtomatik qo'shilmaydi, faqat ko'rsatiladi)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const { data: recentTasks } = await supabase
+      .from('daily_tasks')
+      .select('title')
+      .eq('user_id', user.id)
+      .gte('task_date', sevenDaysAgo.toISOString().split('T')[0]);
 
-      if (!profile) {
-        // Profil yo'q — onboarding kerak
-        return NextResponse.json({ tasks: [], needsOnboarding: true });
-      }
+    const recentTitles = (recentTasks || []).map(t => t.title);
+    const todayTitles = (todayTasks || []).map(t => t.title);
+    const allExclude = [...new Set([...recentTitles, ...todayTitles])];
 
-      // Oxirgi 7 kunlik tarix
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const { data: recentTasks } = await supabase
-        .from('daily_tasks')
-        .select('title')
-        .eq('user_id', user.id)
-        .gte('task_date', sevenDaysAgo.toISOString().split('T')[0]);
+    // 5 ta tavsiya berish (lekin qo'shilmaydi!)
+    const suggestions = generateDailyTasks(profile.goal as GoalType, allExclude, 5);
 
-      const recentTitles = (recentTasks || []).map(t => t.title);
-
-      // Yangi tasklar generatsiya
-      const newTasks = generateDailyTasks(profile.goal as GoalType, recentTitles, 3);
-
-      const taskInserts = newTasks.map(task => ({
-        user_id: user.id,
-        title: task.title,
-        description: task.description,
-        goal_type: profile.goal,
-        task_date: today,
-        completed: false,
-        coins_reward: task.coins_reward,
-      }));
-
-      const { data: insertedTasks, error: insertError } = await supabase
-        .from('daily_tasks')
-        .upsert(taskInserts, { onConflict: 'user_id,title,task_date' })
-        .select();
-
-      if (insertError) {
-        console.error('Auto-generate tasks error:', insertError);
-        return NextResponse.json({ tasks: [], error: 'Task generatsiya xatosi' });
-      }
-
-      return NextResponse.json({ tasks: insertedTasks || [] });
-    }
-
-    return NextResponse.json({ tasks: todayTasks });
+    return NextResponse.json({
+      tasks: todayTasks || [],
+      suggestions,
+      goal: profile.goal,
+    });
   } catch (error) {
     console.error('Daily tasks error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
 
-// POST — Task bajarilganligini belgilash
+// POST — Task qo'shish, bajarish yoki o'chirish
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -95,41 +75,114 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { taskId, completed } = await request.json();
+    const body = await request.json();
+    const { action } = body;
 
-    if (!taskId) {
-      return NextResponse.json({ error: 'Task ID kerak' }, { status: 400 });
+    const today = new Date().toISOString().split('T')[0];
+
+    // ===== 1. Yangi task qo'shish (tavsiyadan yoki o'zi yozgan) =====
+    if (action === 'add') {
+      const { title, description, coins_reward, goal_type } = body;
+
+      if (!title) {
+        return NextResponse.json({ error: 'Vazifa nomi kerak' }, { status: 400 });
+      }
+
+      // Bugungi tasklar sonini tekshirish (max 5)
+      const { data: existing } = await supabase
+        .from('daily_tasks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('task_date', today);
+
+      if ((existing?.length || 0) >= 5) {
+        return NextResponse.json({ error: 'Kuniga 5 ta vazifagacha qo\'shish mumkin' }, { status: 400 });
+      }
+
+      const { data: newTask, error: insertError } = await supabase
+        .from('daily_tasks')
+        .insert({
+          user_id: user.id,
+          title,
+          description: description || '',
+          goal_type: goal_type || 'custom',
+          task_date: today,
+          completed: false,
+          coins_reward: coins_reward || 10,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Task insert error:', insertError);
+        return NextResponse.json({ error: 'Vazifa qo\'shib bo\'lmadi' }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true, task: newTask });
     }
 
-    // Task yangilash
-    const { data: task, error: updateError } = await supabase
-      .from('daily_tasks')
-      .update({
-        completed: completed !== false,
-        completed_at: completed !== false ? new Date().toISOString() : null,
-      })
-      .eq('id', taskId)
-      .eq('user_id', user.id)
-      .select()
-      .single();
+    // ===== 2. Task bajarilganligini belgilash =====
+    if (action === 'toggle' || !action) {
+      const { taskId, completed } = body;
 
-    if (updateError) {
-      console.error('Task update error:', updateError);
-      return NextResponse.json({ error: 'Task yangilanmadi' }, { status: 500 });
+      if (!taskId) {
+        return NextResponse.json({ error: 'Task ID kerak' }, { status: 400 });
+      }
+
+      const { data: task, error: updateError } = await supabase
+        .from('daily_tasks')
+        .update({
+          completed: completed !== false,
+          completed_at: completed !== false ? new Date().toISOString() : null,
+        })
+        .eq('id', taskId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Task update error:', updateError);
+        return NextResponse.json({ error: 'Task yangilanmadi' }, { status: 500 });
+      }
+
+      // Agar task bajarilgan bo'lsa — coin berish
+      if (completed !== false && task?.coins_reward) {
+        await supabase.from('user_coins').insert({
+          user_id: user.id,
+          amount: task.coins_reward,
+          reason: `Vazifa: ${task.title}`,
+        });
+      }
+
+      return NextResponse.json({ success: true, task });
     }
 
-    // Agar task bajarilgan bo'lsa — coin berish
-    if (completed !== false && task?.coins_reward) {
-      await supabase.from('user_coins').insert({
-        user_id: user.id,
-        amount: task.coins_reward,
-        reason: `Vazifa: ${task.title}`,
-      });
+    // ===== 3. Task o'chirish =====
+    if (action === 'delete') {
+      const { taskId } = body;
+
+      if (!taskId) {
+        return NextResponse.json({ error: 'Task ID kerak' }, { status: 400 });
+      }
+
+      const { error: deleteError } = await supabase
+        .from('daily_tasks')
+        .delete()
+        .eq('id', taskId)
+        .eq('user_id', user.id)
+        .eq('completed', false); // Faqat bajarilmaganini o'chirish
+
+      if (deleteError) {
+        console.error('Task delete error:', deleteError);
+        return NextResponse.json({ error: 'O\'chirib bo\'lmadi' }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true });
     }
 
-    return NextResponse.json({ success: true, task });
+    return NextResponse.json({ error: 'Noma\'lum action' }, { status: 400 });
   } catch (error) {
-    console.error('Task complete error:', error);
+    console.error('Task action error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
